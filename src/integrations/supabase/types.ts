@@ -14,16 +14,247 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      academic_data: {
+        Row: {
+          created_at: string
+          id: string
+          nota: number
+          nota_max: number
+          nota_min: number
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nota: number
+          nota_max?: number
+          nota_min?: number
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nota?: number
+          nota_max?: number
+          nota_min?: number
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academic_data_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          ano_letivo: number
+          created_at: string
+          id: string
+          nome_turma: string
+          school_id: string
+          serie: string
+        }
+        Insert: {
+          ano_letivo?: number
+          created_at?: string
+          id?: string
+          nome_turma: string
+          school_id: string
+          serie: string
+        }
+        Update: {
+          ano_letivo?: number
+          created_at?: string
+          id?: string
+          nome_turma?: string
+          school_id?: string
+          serie?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classes_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credes: {
+        Row: {
+          cidade_sede: string
+          created_at: string
+          id: string
+          nome: string
+          numero: number
+        }
+        Insert: {
+          cidade_sede: string
+          created_at?: string
+          id?: string
+          nome: string
+          numero: number
+        }
+        Update: {
+          cidade_sede?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          numero?: number
+        }
+        Relationships: []
+      }
+      schools: {
+        Row: {
+          cidade: string
+          created_at: string
+          crede_id: string
+          id: string
+          nome: string
+          responsavel_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cidade: string
+          created_at?: string
+          crede_id: string
+          id?: string
+          nome: string
+          responsavel_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cidade?: string
+          created_at?: string
+          crede_id?: string
+          id?: string
+          nome?: string
+          responsavel_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schools_crede_id_fkey"
+            columns: ["crede_id"]
+            isOneToOne: false
+            referencedRelation: "credes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          class_id: string
+          codigo_aluno: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          class_id: string
+          codigo_aluno: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          class_id?: string
+          codigo_aluno?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_responses: {
+        Row: {
+          autogestao: number
+          colaboracao: number
+          empatia: number
+          id: string
+          participacao: number
+          resolucao_conflitos: number
+          respeito: number
+          student_id: string
+          submitted_at: string
+        }
+        Insert: {
+          autogestao: number
+          colaboracao: number
+          empatia: number
+          id?: string
+          participacao: number
+          resolucao_conflitos: number
+          respeito: number
+          student_id: string
+          submitted_at?: string
+        }
+        Update: {
+          autogestao?: number
+          colaboracao?: number
+          empatia?: number
+          id?: string
+          participacao?: number
+          resolucao_conflitos?: number
+          respeito?: number
+          student_id?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_responses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "school_responsible"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +381,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "school_responsible"],
+    },
   },
 } as const
