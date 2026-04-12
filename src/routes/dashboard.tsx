@@ -154,7 +154,7 @@ function DashboardPage() {
                           size: 6,
                           color: filteredVdis.map(v => v.modulo),
                           colorscale: "Viridis",
-                          colorbar: { title: "|VDI|" },
+                          colorbar: { title: { text: "|VDI|" } },
                         },
                       }]}
                       layout={{
@@ -162,9 +162,9 @@ function DashboardPage() {
                         height: 500,
                         margin: { l: 0, r: 0, t: 30, b: 0 },
                         scene: {
-                          xaxis: { title: "Acadêmico (A)" },
-                          yaxis: { title: "Social (S)" },
-                          zaxis: { title: "Socioemocional (E)" },
+                          xaxis: { title: { text: "Acadêmico (A)" },
+                          yaxis: { title: { text: "Social (S)" },
+                          zaxis: { title: { text: "Socioemocional (E)" },
                         },
                         paper_bgcolor: "transparent",
                       }}
@@ -199,8 +199,8 @@ function DashboardPage() {
                       layout={{
                         autosize: true,
                         height: 400,
-                        xaxis: { title: "Acadêmico (A)", range: [0, 1] },
-                        yaxis: { title: "Social (S)", range: [0, 1] },
+                        xaxis: { title: { text: "Acadêmico (A)", range: [0, 1] },
+                        yaxis: { title: { text: "Social (S)", range: [0, 1] },
                         paper_bgcolor: "transparent",
                         plot_bgcolor: "transparent",
                         margin: { l: 50, r: 20, t: 30, b: 50 },
@@ -244,7 +244,7 @@ function DashboardPage() {
                       layout={{
                         autosize: true,
                         height: 400,
-                        yaxis: { title: "IEDE" },
+                        yaxis: { title: { text: "IEDE" },
                         paper_bgcolor: "transparent",
                         plot_bgcolor: "transparent",
                         margin: { l: 50, r: 20, t: 30, b: 80 },
@@ -305,8 +305,8 @@ function DashboardPage() {
                         layout={{
                           autosize: true,
                           height: 400,
-                          xaxis: { title: "Social (S)", range: [0, 1] },
-                          yaxis: { title: "Acadêmico (A)", range: [0, 1] },
+                          xaxis: { title: { text: "Social (S)", range: [0, 1] },
+                          yaxis: { title: { text: "Acadêmico (A)", range: [0, 1] },
                           paper_bgcolor: "transparent",
                           plot_bgcolor: "transparent",
                           margin: { l: 50, r: 20, t: 30, b: 50 },
