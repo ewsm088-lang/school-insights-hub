@@ -22,7 +22,7 @@ export const Route = createFileRoute("/escola")({
 });
 
 interface ClassItem { id: string; nome_turma: string; serie: string; ano_letivo: number; }
-interface Student { id: string; codigo_aluno: string; academic_data: { nota: number; nota_min: number; nota_max: number } | null; }
+interface Student { id: string; codigo_aluno: string; nome?: string; academic_data: { nota: number; nota_min: number; nota_max: number } | null; }
 
 function EscolaPage() {
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ function EscolaPage() {
   async function loadStudents(classId: string) {
     const { data } = await supabase
       .from("students")
-      .select("id, codigo_aluno, academic_data(nota, nota_min, nota_max)")
+      .select("id, codigo_aluno, nome, academic_data(nota, nota_min, nota_max)")
       .eq("class_id", classId)
       .order("codigo_aluno");
 
@@ -205,10 +205,8 @@ function EscolaPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Nome</TableHead>
                         <TableHead>Código</TableHead>
-                        <TableHead>Nota</TableHead>
-                        <TableHead>Mín</TableHead>
-                        <TableHead>Máx</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
