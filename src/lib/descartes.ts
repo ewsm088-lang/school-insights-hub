@@ -1,34 +1,43 @@
 // DESCARTES Mathematical Model
-// All calculations per the pre-project document
+// 40 questions: S01-S20 (Social), E01-E20 (Socioemocional)
+// All values stored as Likert 1-5 integers
+
+export const SOCIAL_KEYS = [
+  "s01","s02","s03","s04","s05","s06","s07","s08","s09","s10",
+  "s11","s12","s13","s14","s15","s16","s17","s18","s19","s20",
+] as const;
+
+export const SOCIO_KEYS = [
+  "e01","e02","e03","e04","e05","e06","e07","e08","e09","e10",
+  "e11","e12","e13","e14","e15","e16","e17","e18","e19","e20",
+] as const;
+
+export type SurveyRow = Record<typeof SOCIAL_KEYS[number] | typeof SOCIO_KEYS[number], number>;
 
 export interface StudentData {
   id: string;
+  nome?: string;
   codigo_aluno: string;
   class_id: string;
+  survey: SurveyRow;
   nota?: number;
   nota_min?: number;
   nota_max?: number;
-  participacao?: number;
-  respeito?: number;
-  colaboracao?: number;
-  autogestao?: number;
-  empatia?: number;
-  resolucao_conflitos?: number;
 }
 
 export interface VDIResult {
   studentId: string;
+  nome: string;
   codigoAluno: string;
   classId: string;
-  A: number; // Eixo X - Acadêmico
-  S: number; // Eixo Y - Social
-  E: number; // Eixo Z - Socioemocional
+  A: number; // Eixo X - Acadêmico (0-1)
+  S: number; // Eixo Y - Social (0-1)
+  E: number; // Eixo Z - Socioemocional (0-1)
   modulo: number; // |VDI|
 }
 
 /**
  * Eixo X — Acadêmico: A_i = (N_i - N_min) / (N_max - N_min)
- * Normalização min-max das notas escolares
  */
 export function calcAcademico(nota: number, notaMin: number, notaMax: number): number {
   if (notaMax === notaMin) return 0;
@@ -36,52 +45,55 @@ export function calcAcademico(nota: number, notaMin: number, notaMax: number): n
 }
 
 /**
- * Eixo Y — Social: S_i = (P + R + C) / 3 → normalizado para 0-1: (S - 1) / 4
- * P = Participação, R = Respeito, C = Colaboração (Likert 1-5)
+ * Eixo Y — Social: média das 20 respostas Likert (1-5), normalizada para 0-1: (média - 1) / 4
  */
-export function calcSocial(participacao: number, respeito: number, colaboracao: number): number {
-  const media = (participacao + respeito + colaboracao) / 3;
+export function calcSocial(survey: SurveyRow): number {
+  const sum = SOCIAL_KEYS.reduce((acc, k) => acc + (survey[k] || 3), 0);
+  const media = sum / 20;
   return (media - 1) / 4;
 }
 
 /**
- * Eixo Z — Socioemocional: E_i = (AG + EM + RC) / 3 → normalizado para 0-1: (E - 1) / 4
- * AG = Autogestão, EM = Empatia, RC = Resolução de Conflitos (Likert 1-5)
+ * Eixo Z — Socioemocional: média das 20 respostas Likert (1-5), normalizada para 0-1: (média - 1) / 4
  */
-export function calcSocioemocional(autogestao: number, empatia: number, resolucaoConflitos: number): number {
-  const media = (autogestao + empatia + resolucaoConflitos) / 3;
+export function calcSocioemocional(survey: SurveyRow): number {
+  const sum = SOCIO_KEYS.reduce((acc, k) => acc + (survey[k] || 3), 0);
+  const media = sum / 20;
   return (media - 1) / 4;
 }
 
 /**
- * |VDI_i| = √(A² + S² + E²)
+ * |VDI_i| = √(A² + S² + E²) — com acadêmico opcional
+ * Se acadêmico não disponível: |VDI| = √(S² + E²)
  */
-export function calcModuloVDI(A: number, S: number, E: number): number {
-  return Math.sqrt(A * A + S * S + E * E);
+export function calcModuloVDI(A: number | null, S: number, E: number): number {
+  if (A != null) return Math.sqrt(A * A + S * S + E * E);
+  return Math.sqrt(S * S + E * E);
 }
 
 /**
  * Calculate VDI for a single student
  */
 export function calcVDI(student: StudentData): VDIResult | null {
-  if (
-    student.nota == null || student.nota_min == null || student.nota_max == null ||
-    student.participacao == null || student.respeito == null || student.colaboracao == null ||
-    student.autogestao == null || student.empatia == null || student.resolucao_conflitos == null
-  ) {
-    return null;
+  const S = calcSocial(student.survey);
+  const E = calcSocioemocional(student.survey);
+
+  let A: number | null = null;
+  if (student.nota != null && student.nota_min != null && student.nota_max != null) {
+    A = calcAcademico(student.nota, student.nota_min, student.nota_max);
   }
 
-  const A = calcAcademico(student.nota, student.nota_min, student.nota_max);
-  const S = calcSocial(student.participacao, student.respeito, student.colaboracao);
-  const E = calcSocioemocional(student.autogestao, student.empatia, student.resolucao_conflitos);
   const modulo = calcModuloVDI(A, S, E);
 
   return {
     studentId: student.id,
+    nome: student.nome || student.codigo_aluno,
     codigoAluno: student.codigo_aluno,
     classId: student.class_id,
-    A, S, E, modulo,
+    A: A ?? 0,
+    S,
+    E,
+    modulo,
   };
 }
 
@@ -105,7 +117,6 @@ export function calcDesvioPadrao(vdis: VDIResult[]): number {
 
 /**
  * Correlação de Pearson entre dois arrays
- * r(S, A) = correlação entre Social e Acadêmico
  */
 export function calcPearson(x: number[], y: number[]): number {
   const n = x.length;
@@ -114,10 +125,7 @@ export function calcPearson(x: number[], y: number[]): number {
   const meanX = x.reduce((a, b) => a + b, 0) / n;
   const meanY = y.reduce((a, b) => a + b, 0) / n;
 
-  let num = 0;
-  let denomX = 0;
-  let denomY = 0;
-
+  let num = 0, denomX = 0, denomY = 0;
   for (let i = 0; i < n; i++) {
     const dx = x[i] - meanX;
     const dy = y[i] - meanY;
@@ -129,4 +137,13 @@ export function calcPearson(x: number[], y: number[]): number {
   const denom = Math.sqrt(denomX * denomY);
   if (denom === 0) return 0;
   return num / denom;
+}
+
+/**
+ * Classificação do IEDE
+ */
+export function classificar(iede: number): string {
+  if (iede >= 0.7) return "Alto";
+  if (iede >= 0.4) return "Intermediário";
+  return "Baixo";
 }

@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Header } from "@/components/Header";
 import { toast } from "sonner";
 import { CheckCircle } from "lucide-react";
+import { SOCIAL_QUESTIONS, SOCIO_QUESTIONS, LIKERT_OPTIONS } from "@/lib/questions";
 
 export const Route = createFileRoute("/formulario")({
   head: () => ({
@@ -24,29 +25,12 @@ export const Route = createFileRoute("/formulario")({
 interface School { id: string; nome: string; }
 interface ClassItem { id: string; nome_turma: string; serie: string; }
 
-const LIKERT_OPTIONS = [
-  { value: "1", label: "1 — Nunca" },
-  { value: "2", label: "2 — Raramente" },
-  { value: "3", label: "3 — Às vezes" },
-  { value: "4", label: "4 — Frequentemente" },
-  { value: "5", label: "5 — Sempre" },
-];
-
-const QUESTIONS = [
-  { key: "participacao", label: "Participação", description: "Você participa ativamente das atividades em sala de aula?" },
-  { key: "respeito", label: "Respeito", description: "Você respeita as opiniões e diferenças dos colegas?" },
-  { key: "colaboracao", label: "Colaboração", description: "Você colabora com os colegas em trabalhos e atividades?" },
-  { key: "autogestao", label: "Autogestão", description: "Você consegue organizar suas tarefas e controlar suas emoções?" },
-  { key: "empatia", label: "Empatia", description: "Você se coloca no lugar dos outros e compreende seus sentimentos?" },
-  { key: "resolucao_conflitos", label: "Resolução de Conflitos", description: "Você resolve desentendimentos de forma pacífica e dialogada?" },
-];
-
 function FormularioPage() {
   const [schools, setSchools] = useState<School[]>([]);
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [selectedSchool, setSelectedSchool] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
-  const [codigoAluno, setCodigoAluno] = useState("");
+  const [nomeAluno, setNomeAluno] = useState("");
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -64,20 +48,18 @@ function FormularioPage() {
     });
   }, [selectedSchool]);
 
+  const allQuestions = [...SOCIAL_QUESTIONS, ...SOCIO_QUESTIONS];
+  const allAnswered = allQuestions.every(q => responses[q.key]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (QUESTIONS.some(q => !responses[q.key])) {
-      toast.error("Responda todas as perguntas");
-      return;
-    }
+    if (!allAnswered) { toast.error("Responda todas as perguntas"); return; }
 
     setLoading(true);
 
-    // Create student
     const { data: student, error: studentError } = await supabase
       .from("students")
-      .insert({ class_id: selectedClass, codigo_aluno: codigoAluno })
+      .insert({ class_id: selectedClass, codigo_aluno: nomeAluno, nome: nomeAluno })
       .select("id")
       .single();
 
@@ -87,17 +69,12 @@ function FormularioPage() {
       return;
     }
 
-    // Submit survey
-    const { error: surveyError } = await supabase.from("survey_responses").insert({
-      student_id: student.id,
-      participacao: parseInt(responses.participacao),
-      respeito: parseInt(responses.respeito),
-      colaboracao: parseInt(responses.colaboracao),
-      autogestao: parseInt(responses.autogestao),
-      empatia: parseInt(responses.empatia),
-      resolucao_conflitos: parseInt(responses.resolucao_conflitos),
-    });
+    const surveyData: Record<string, any> = { student_id: student.id };
+    for (const q of allQuestions) {
+      surveyData[q.key] = parseInt(responses[q.key]);
+    }
 
+    const { error: surveyError } = await supabase.from("survey_responses").insert(surveyData);
     if (surveyError) {
       toast.error("Erro ao enviar respostas: " + surveyError.message);
       setLoading(false);
@@ -119,7 +96,7 @@ function FormularioPage() {
               <CheckCircle className="h-16 w-16 text-secondary mx-auto" />
               <h2 className="font-heading text-2xl font-bold">Obrigado!</h2>
               <p className="text-muted-foreground">Suas respostas foram registradas com sucesso.</p>
-              <Button onClick={() => { setSubmitted(false); setResponses({}); setCodigoAluno(""); }}>
+              <Button onClick={() => { setSubmitted(false); setResponses({}); setNomeAluno(""); }}>
                 Responder novamente
               </Button>
             </CardContent>
@@ -135,8 +112,8 @@ function FormularioPage() {
       <div className="mx-auto max-w-2xl px-4 py-8">
         <Card>
           <CardHeader>
-            <CardTitle className="font-heading text-2xl">Questionário de Convivência</CardTitle>
-            <CardDescription>Responda com sinceridade. Suas respostas são anônimas e ajudam a melhorar a convivência escolar.</CardDescription>
+            <CardTitle className="font-heading text-2xl">Questionário de Convivência Democrática</CardTitle>
+            <CardDescription>Responda com sinceridade. Suas respostas ajudam a melhorar a convivência escolar.</CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6">
@@ -167,39 +144,59 @@ function FormularioPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="codigo">Código do Aluno</Label>
-                <Input id="codigo" placeholder="Ex: ALU001" value={codigoAluno} onChange={e => setCodigoAluno(e.target.value)} required />
+                <Label htmlFor="nome">Nome Completo</Label>
+                <Input id="nome" placeholder="Seu nome completo" value={nomeAluno} onChange={e => setNomeAluno(e.target.value)} required />
               </div>
 
               <hr />
 
-              {/* Likert questions */}
-              {QUESTIONS.map(q => (
-                <div key={q.key} className="space-y-3 rounded-lg border p-4">
-                  <div>
-                    <h3 className="font-heading font-semibold">{q.label}</h3>
-                    <p className="text-sm text-muted-foreground">{q.description}</p>
-                  </div>
-                  <RadioGroup value={responses[q.key] || ""} onValueChange={v => setResponses(prev => ({ ...prev, [q.key]: v }))}>
-                    <div className="flex flex-wrap gap-3">
-                      {LIKERT_OPTIONS.map(opt => (
-                        <Label key={opt.value} className="flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 text-sm hover:bg-muted transition-colors has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5">
-                          <RadioGroupItem value={opt.value} />
-                          {opt.label}
-                        </Label>
-                      ))}
-                    </div>
-                  </RadioGroup>
-                </div>
+              {/* Social dimension */}
+              <div>
+                <h3 className="font-heading text-lg font-semibold mb-1 text-primary">Dimensão Social</h3>
+                <p className="text-sm text-muted-foreground mb-4">Como você se relaciona com os colegas e a turma</p>
+              </div>
+              {SOCIAL_QUESTIONS.map((q, i) => (
+                <QuestionItem key={q.key} index={i + 1} question={q.label} questionKey={q.key} value={responses[q.key] || ""} onChange={v => setResponses(prev => ({ ...prev, [q.key]: v }))} />
               ))}
 
-              <Button type="submit" className="w-full" size="lg" disabled={loading || !selectedClass || !codigoAluno}>
+              <hr />
+
+              {/* Socioemocional dimension */}
+              <div>
+                <h3 className="font-heading text-lg font-semibold mb-1 text-primary">Dimensão Socioemocional</h3>
+                <p className="text-sm text-muted-foreground mb-4">Como você lida com suas emoções e conflitos</p>
+              </div>
+              {SOCIO_QUESTIONS.map((q, i) => (
+                <QuestionItem key={q.key} index={i + 21} question={q.label} questionKey={q.key} value={responses[q.key] || ""} onChange={v => setResponses(prev => ({ ...prev, [q.key]: v }))} />
+              ))}
+
+              <Button type="submit" className="w-full" size="lg" disabled={loading || !selectedClass || !nomeAluno || !allAnswered}>
                 {loading ? "Enviando..." : "Enviar Respostas"}
               </Button>
             </CardContent>
           </form>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function QuestionItem({ index, question, questionKey, value, onChange }: {
+  index: number; question: string; questionKey: string; value: string; onChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-lg border p-4">
+      <p className="text-sm font-medium"><span className="text-muted-foreground mr-2">{index}.</span>{question}</p>
+      <RadioGroup value={value} onValueChange={onChange}>
+        <div className="flex flex-wrap gap-2">
+          {LIKERT_OPTIONS.map(opt => (
+            <Label key={opt.value} className="flex items-center gap-1.5 cursor-pointer rounded-md border px-3 py-2 text-xs hover:bg-muted transition-colors has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5">
+              <RadioGroupItem value={opt.value} />
+              {opt.label}
+            </Label>
+          ))}
+        </div>
+      </RadioGroup>
     </div>
   );
 }
