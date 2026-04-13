@@ -207,6 +207,9 @@ function EscolaPage() {
                       <TableRow>
                         <TableHead>Nome</TableHead>
                         <TableHead>Código</TableHead>
+                        <TableHead>Nota</TableHead>
+                        <TableHead>Mín</TableHead>
+                        <TableHead>Máx</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
