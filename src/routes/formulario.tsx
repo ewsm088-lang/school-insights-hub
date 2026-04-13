@@ -74,7 +74,7 @@ function FormularioPage() {
       surveyData[q.key] = parseInt(responses[q.key]);
     }
 
-    const { error: surveyError } = await supabase.from("survey_responses").insert(surveyData);
+    const { error: surveyError } = await supabase.from("survey_responses").insert(surveyData as any);
     if (surveyError) {
       toast.error("Erro ao enviar respostas: " + surveyError.message);
       setLoading(false);
