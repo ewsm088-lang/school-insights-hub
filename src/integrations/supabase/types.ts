@@ -155,18 +155,21 @@ export type Database = {
           codigo_aluno: string
           created_at: string
           id: string
+          nome: string | null
         }
         Insert: {
           class_id: string
           codigo_aluno: string
           created_at?: string
           id?: string
+          nome?: string | null
         }
         Update: {
           class_id?: string
           codigo_aluno?: string
           created_at?: string
           id?: string
+          nome?: string | null
         }
         Relationships: [
           {
@@ -180,35 +183,137 @@ export type Database = {
       }
       survey_responses: {
         Row: {
-          autogestao: number
-          colaboracao: number
-          empatia: number
+          e01: number
+          e02: number
+          e03: number
+          e04: number
+          e05: number
+          e06: number
+          e07: number
+          e08: number
+          e09: number
+          e10: number
+          e11: number
+          e12: number
+          e13: number
+          e14: number
+          e15: number
+          e16: number
+          e17: number
+          e18: number
+          e19: number
+          e20: number
           id: string
-          participacao: number
-          resolucao_conflitos: number
-          respeito: number
+          s01: number
+          s02: number
+          s03: number
+          s04: number
+          s05: number
+          s06: number
+          s07: number
+          s08: number
+          s09: number
+          s10: number
+          s11: number
+          s12: number
+          s13: number
+          s14: number
+          s15: number
+          s16: number
+          s17: number
+          s18: number
+          s19: number
+          s20: number
           student_id: string
           submitted_at: string
         }
         Insert: {
-          autogestao: number
-          colaboracao: number
-          empatia: number
+          e01?: number
+          e02?: number
+          e03?: number
+          e04?: number
+          e05?: number
+          e06?: number
+          e07?: number
+          e08?: number
+          e09?: number
+          e10?: number
+          e11?: number
+          e12?: number
+          e13?: number
+          e14?: number
+          e15?: number
+          e16?: number
+          e17?: number
+          e18?: number
+          e19?: number
+          e20?: number
           id?: string
-          participacao: number
-          resolucao_conflitos: number
-          respeito: number
+          s01?: number
+          s02?: number
+          s03?: number
+          s04?: number
+          s05?: number
+          s06?: number
+          s07?: number
+          s08?: number
+          s09?: number
+          s10?: number
+          s11?: number
+          s12?: number
+          s13?: number
+          s14?: number
+          s15?: number
+          s16?: number
+          s17?: number
+          s18?: number
+          s19?: number
+          s20?: number
           student_id: string
           submitted_at?: string
         }
         Update: {
-          autogestao?: number
-          colaboracao?: number
-          empatia?: number
+          e01?: number
+          e02?: number
+          e03?: number
+          e04?: number
+          e05?: number
+          e06?: number
+          e07?: number
+          e08?: number
+          e09?: number
+          e10?: number
+          e11?: number
+          e12?: number
+          e13?: number
+          e14?: number
+          e15?: number
+          e16?: number
+          e17?: number
+          e18?: number
+          e19?: number
+          e20?: number
           id?: string
-          participacao?: number
-          resolucao_conflitos?: number
-          respeito?: number
+          s01?: number
+          s02?: number
+          s03?: number
+          s04?: number
+          s05?: number
+          s06?: number
+          s07?: number
+          s08?: number
+          s09?: number
+          s10?: number
+          s11?: number
+          s12?: number
+          s13?: number
+          s14?: number
+          s15?: number
+          s16?: number
+          s17?: number
+          s18?: number
+          s19?: number
+          s20?: number
           student_id?: string
           submitted_at?: string
         }
