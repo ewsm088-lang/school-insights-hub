@@ -213,9 +213,8 @@ function EscolaPage() {
                     <TableBody>
                       {students.map(s => (
                         <TableRow key={s.id}>
+                          <TableCell>{s.nome || "—"}</TableCell>
                           <TableCell className="font-mono text-sm">{s.codigo_aluno}</TableCell>
-                          <TableCell>
-                            <Input type="number" step="0.01" className="w-20" value={notaInputs[s.id]?.nota || ""} onChange={e => setNotaInputs(prev => ({ ...prev, [s.id]: { ...prev[s.id], nota: e.target.value } }))} />
                           </TableCell>
                           <TableCell>
                             <Input type="number" step="0.01" className="w-20" value={notaInputs[s.id]?.min || "0"} onChange={e => setNotaInputs(prev => ({ ...prev, [s.id]: { ...prev[s.id], min: e.target.value } }))} />
