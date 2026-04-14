@@ -144,7 +144,7 @@ function EscolaPage() {
     for (const k of [...SOCIAL_KEYS, ...SOCIO_KEYS]) {
       payload[k] = parseInt(surveyEdits[k] || "3");
     }
-    const { error } = await supabase.from("survey_responses").update(payload).eq("student_id", studentId);
+    const { error } = await supabase.from("survey_responses").update(payload as any).eq("student_id", studentId);
     if (error) { toast.error(error.message); return; }
     toast.success("Respostas atualizadas!");
     setEditingSurvey(null);
