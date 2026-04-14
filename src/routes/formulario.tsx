@@ -22,13 +22,16 @@ export const Route = createFileRoute("/formulario")({
   component: FormularioPage,
 });
 
+interface Crede { id: string; numero: number; nome: string; cidade_sede: string; }
 interface School { id: string; nome: string; }
 interface ClassItem { id: string; nome_turma: string; serie: string; }
 
 function FormularioPage() {
+  const [credes, setCredes] = useState<Crede[]>([]);
+  const [selectedCrede, setSelectedCrede] = useState("");
   const [schools, setSchools] = useState<School[]>([]);
-  const [classes, setClasses] = useState<ClassItem[]>([]);
   const [selectedSchool, setSelectedSchool] = useState("");
+  const [classes, setClasses] = useState<ClassItem[]>([]);
   const [selectedClass, setSelectedClass] = useState("");
   const [nomeAluno, setNomeAluno] = useState("");
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -36,16 +39,26 @@ function FormularioPage() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    supabase.from("schools").select("id, nome").order("nome").then(({ data }) => {
-      if (data) setSchools(data);
+    supabase.from("credes").select("id, numero, nome, cidade_sede").order("numero").then(({ data }) => {
+      if (data) setCredes(data);
     });
   }, []);
 
   useEffect(() => {
-    if (!selectedSchool) { setClasses([]); return; }
+    if (!selectedCrede) { setSchools([]); setSelectedSchool(""); return; }
+    supabase.from("schools").select("id, nome").eq("crede_id", selectedCrede).order("nome").then(({ data }) => {
+      if (data) setSchools(data);
+    });
+    setSelectedSchool("");
+    setSelectedClass("");
+  }, [selectedCrede]);
+
+  useEffect(() => {
+    if (!selectedSchool) { setClasses([]); setSelectedClass(""); return; }
     supabase.from("classes").select("id, nome_turma, serie").eq("school_id", selectedSchool).order("serie").then(({ data }) => {
       if (data) setClasses(data);
     });
+    setSelectedClass("");
   }, [selectedSchool]);
 
   const allQuestions = [...SOCIAL_QUESTIONS, ...SOCIO_QUESTIONS];
@@ -117,29 +130,45 @@ function FormularioPage() {
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6">
-              {/* School & Class selection */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              {/* CREDE → School → Class selection */}
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Escola</Label>
-                  <Select value={selectedSchool} onValueChange={v => { setSelectedSchool(v); setSelectedClass(""); }}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <Label>CREDE</Label>
+                  <Select value={selectedCrede} onValueChange={setSelectedCrede}>
+                    <SelectTrigger><SelectValue placeholder="Selecione a CREDE..." /></SelectTrigger>
                     <SelectContent>
-                      {schools.map(s => (
-                        <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                      {credes.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.nome} — {c.cidade_sede}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Turma</Label>
-                  <Select value={selectedClass} onValueChange={setSelectedClass} disabled={!selectedSchool}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
-                      {classes.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.serie} — {c.nome_turma}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Escola</Label>
+                    <Select value={selectedSchool} onValueChange={setSelectedSchool} disabled={!selectedCrede}>
+                      <SelectTrigger><SelectValue placeholder={selectedCrede ? "Selecione a escola..." : "Selecione a CREDE primeiro"} /></SelectTrigger>
+                      <SelectContent>
+                        {schools.map(s => (
+                          <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                        ))}
+                        {schools.length === 0 && selectedCrede && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">Nenhuma escola cadastrada nesta CREDE</div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Turma</Label>
+                    <Select value={selectedClass} onValueChange={setSelectedClass} disabled={!selectedSchool}>
+                      <SelectTrigger><SelectValue placeholder={selectedSchool ? "Selecione..." : "Selecione a escola primeiro"} /></SelectTrigger>
+                      <SelectContent>
+                        {classes.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.serie} — {c.nome_turma}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
@@ -153,7 +182,7 @@ function FormularioPage() {
               {/* Social dimension */}
               <div>
                 <h3 className="font-heading text-lg font-semibold mb-1 text-primary">Dimensão Social</h3>
-                <p className="text-sm text-muted-foreground mb-4">Como você se relaciona com os colegas e a turma</p>
+                <p className="text-sm text-muted-foreground mb-4">Participação, Respeito e Colaboração</p>
               </div>
               {SOCIAL_QUESTIONS.map((q, i) => (
                 <QuestionItem key={q.key} index={i + 1} question={q.label} questionKey={q.key} value={responses[q.key] || ""} onChange={v => setResponses(prev => ({ ...prev, [q.key]: v }))} />
@@ -164,7 +193,7 @@ function FormularioPage() {
               {/* Socioemocional dimension */}
               <div>
                 <h3 className="font-heading text-lg font-semibold mb-1 text-primary">Dimensão Socioemocional</h3>
-                <p className="text-sm text-muted-foreground mb-4">Como você lida com suas emoções e conflitos</p>
+                <p className="text-sm text-muted-foreground mb-4">Autogestão, Empatia e Resolução de Conflitos</p>
               </div>
               {SOCIO_QUESTIONS.map((q, i) => (
                 <QuestionItem key={q.key} index={i + 21} question={q.label} questionKey={q.key} value={responses[q.key] || ""} onChange={v => setResponses(prev => ({ ...prev, [q.key]: v }))} />

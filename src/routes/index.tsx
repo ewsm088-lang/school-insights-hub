@@ -62,17 +62,17 @@ function Index() {
             <FeatureCard
               icon={<School className="h-6 w-6" />}
               title="Cadastro da Escola"
-              description="O responsável pela escola se cadastra, seleciona sua CREDE, e cria turmas e séries."
+              description="O responsável pela escola se cadastra, seleciona sua CREDE, informa o INEP e as turmas são criadas automaticamente."
             />
             <FeatureCard
               icon={<Users className="h-6 w-6" />}
               title="Formulário do Aluno"
-              description="Alunos respondem perguntas Likert (1-5) sobre participação, respeito, colaboração, autogestão, empatia e resolução de conflitos."
+              description="Alunos selecionam a CREDE, a escola cadastrada e respondem 40 perguntas Likert (1-5) sobre Participação, Respeito, Colaboração, Autogestão, Empatia e Resolução de Conflitos."
             />
             <FeatureCard
               icon={<BarChart3 className="h-6 w-6" />}
               title="Dashboards e Análise"
-              description="Gráficos 3D de dispersão, IEDE, correlação de Pearson e comparações entre turmas, séries e escola."
+              description="Gráficos 3D de dispersão, IEDE, VDI individual, correlação de Pearson e comparações entre turmas, séries e escola."
             />
           </div>
         </div>
@@ -93,17 +93,36 @@ function Index() {
             <AxisCard
               axis="Y"
               label="Social (S)"
-              formula="S = ((P+R+C)/3 - 1) / 4"
-              description="Participação, Respeito, Colaboração"
+              formula="S = ((P + R + C) / 3 - 1) / 4"
+              subdimensions="P = Participação · R = Respeito · C = Colaboração"
+              description="Média das subdimensões Likert (1-5) normalizada para 0-1"
               color="bg-chart-2"
             />
             <AxisCard
               axis="Z"
               label="Socioemocional (E)"
-              formula="E = ((AG+EM+RC)/3 - 1) / 4"
-              description="Autogestão, Empatia, Resolução de Conflitos"
+              formula="E = ((AG + EM + RC) / 3 - 1) / 4"
+              subdimensions="AG = Autogestão · EM = Empatia · RC = Resolução de Conflitos"
+              description="Média das subdimensões Likert (1-5) normalizada para 0-1"
               color="bg-chart-3"
             />
+          </div>
+
+          {/* VDI and IEDE formulas */}
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            <div className="rounded-xl border bg-card p-6">
+              <h3 className="font-heading font-semibold mb-3">Vetor Democrático Individual (VDI)</h3>
+              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">VDI = (A, S, E)</code>
+              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-3">|VDI| = √(A² + S² + E²)</code>
+              <p className="text-sm text-muted-foreground">Módulo do vetor que representa o estudante no espaço tridimensional</p>
+            </div>
+            <div className="rounded-xl border bg-card p-6">
+              <h3 className="font-heading font-semibold mb-3">Indicadores da Escola</h3>
+              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">IEDE = Σ|VDI| / n</code>
+              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">σ = desvio padrão dos |VDI|</code>
+              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-3">r = correlação de Pearson (S × A)</code>
+              <p className="text-sm text-muted-foreground">IEDE = média dos módulos VDI da escola</p>
+            </div>
           </div>
         </div>
       </section>
@@ -128,7 +147,7 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
   );
 }
 
-function AxisCard({ axis, label, formula, description, color }: { axis: string; label: string; formula: string; description: string; color: string }) {
+function AxisCard({ axis, label, formula, subdimensions, description, color }: { axis: string; label: string; formula: string; subdimensions?: string; description: string; color: string }) {
   return (
     <div className="rounded-xl border bg-card p-6">
       <div className="flex items-center gap-3 mb-4">
@@ -137,7 +156,10 @@ function AxisCard({ axis, label, formula, description, color }: { axis: string; 
         </div>
         <h3 className="font-heading font-semibold">{label}</h3>
       </div>
-      <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-3">{formula}</code>
+      <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">{formula}</code>
+      {subdimensions && (
+        <p className="text-xs text-muted-foreground mb-2">{subdimensions}</p>
+      )}
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );

@@ -117,6 +117,7 @@ export type Database = {
           created_at: string
           crede_id: string
           id: string
+          inep: string | null
           nome: string
           responsavel_id: string | null
           updated_at: string
@@ -126,6 +127,7 @@ export type Database = {
           created_at?: string
           crede_id: string
           id?: string
+          inep?: string | null
           nome: string
           responsavel_id?: string | null
           updated_at?: string
@@ -135,6 +137,7 @@ export type Database = {
           created_at?: string
           crede_id?: string
           id?: string
+          inep?: string | null
           nome?: string
           responsavel_id?: string | null
           updated_at?: string
