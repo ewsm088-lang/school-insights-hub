@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/Header";
 import { toast } from "sonner";
-import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/register")({
   head: () => ({
@@ -27,9 +26,6 @@ interface Crede {
   cidade_sede: string;
 }
 
-const SERIES = ["1°", "2°", "3°"];
-const TURMAS = ["A", "B", "C", "D"];
-
 function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,9 +34,6 @@ function RegisterPage() {
   const [inep, setInep] = useState("");
   const [credeId, setCredeId] = useState("");
   const [credes, setCredes] = useState<Crede[]>([]);
-  const [selectedTurmas, setSelectedTurmas] = useState<string[]>(
-    SERIES.flatMap(s => TURMAS.map(t => `${s}${t}`))
-  );
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -50,16 +43,9 @@ function RegisterPage() {
     });
   }, []);
 
-  const toggleTurma = (turma: string) => {
-    setSelectedTurmas(prev =>
-      prev.includes(turma) ? prev.filter(t => t !== turma) : [...prev, turma]
-    );
-  };
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!credeId) { toast.error("Selecione uma CREDE"); return; }
-    if (selectedTurmas.length === 0) { toast.error("Selecione pelo menos uma turma"); return; }
     setLoading(true);
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -74,38 +60,22 @@ function RegisterPage() {
       return;
     }
 
-    const { data: schoolData, error: schoolError } = await supabase.from("schools").insert({
+    const { error: schoolError } = await supabase.from("schools").insert({
       crede_id: credeId,
       nome: nomeEscola,
       cidade,
       inep: inep || null,
       responsavel_id: authData.user.id,
-    }).select("id").single();
+    });
 
-    if (schoolError || !schoolData) {
-      toast.error("Erro ao cadastrar escola: " + (schoolError?.message || ""));
+    if (schoolError) {
+      toast.error("Erro ao cadastrar escola: " + schoolError.message);
       setLoading(false);
       return;
     }
 
-    // Auto-create selected classes
-    const classInserts = selectedTurmas.map(t => {
-      const serie = t.slice(0, 2); // "1°", "2°", "3°"
-      const turma = t.slice(2);    // "A", "B", "C", "D"
-      return {
-        school_id: schoolData.id,
-        serie,
-        nome_turma: turma,
-      };
-    });
-
-    const { error: classError } = await supabase.from("classes").insert(classInserts);
-    if (classError) {
-      toast.error("Escola criada, mas erro ao criar turmas: " + classError.message);
-    }
-
     setLoading(false);
-    toast.success("Cadastro realizado! Verifique seu e-mail para confirmar.");
+    toast.success("Cadastro realizado! Verifique seu e-mail para confirmar. Adicione suas turmas na página Minha Escola.");
     navigate({ to: "/dashboard" });
   };
 
@@ -116,7 +86,7 @@ function RegisterPage() {
         <Card className="w-full max-w-lg">
           <CardHeader className="text-center">
             <CardTitle className="font-heading text-2xl">Cadastrar Escola</CardTitle>
-            <CardDescription>Registre sua escola no sistema DESCARTES</CardDescription>
+            <CardDescription>Registre sua escola no sistema DESCARTES. Após o cadastro, adicione as turmas na página "Minha Escola".</CardDescription>
           </CardHeader>
           <form onSubmit={handleRegister}>
             <CardContent className="space-y-4">
@@ -147,33 +117,6 @@ function RegisterPage() {
                 <div className="space-y-2">
                   <Label htmlFor="inep">Código INEP</Label>
                   <Input id="inep" placeholder="Ex: 23012345" value={inep} onChange={e => setInep(e.target.value)} />
-                </div>
-              </div>
-
-              {/* Turmas selection */}
-              <div className="space-y-3">
-                <Label>Turmas da Escola</Label>
-                <p className="text-xs text-muted-foreground">Selecione as turmas que a escola possui</p>
-                <div className="space-y-3">
-                  {SERIES.map(serie => (
-                    <div key={serie} className="flex items-center gap-4">
-                      <span className="text-sm font-medium w-8">{serie}</span>
-                      <div className="flex gap-3">
-                        {TURMAS.map(turma => {
-                          const key = `${serie}${turma}`;
-                          return (
-                            <label key={key} className="flex items-center gap-1.5 cursor-pointer">
-                              <Checkbox
-                                checked={selectedTurmas.includes(key)}
-                                onCheckedChange={() => toggleTurma(key)}
-                              />
-                              <span className="text-sm">{turma}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
 
