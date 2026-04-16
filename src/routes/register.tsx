@@ -27,8 +27,6 @@ interface Crede {
   cidade_sede: string;
 }
 
-const SERIES = ["1°", "2°", "3°"];
-const TURMAS = ["A", "B", "C", "D"];
 
 function RegisterPage() {
   const [email, setEmail] = useState("");
