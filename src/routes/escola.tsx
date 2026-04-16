@@ -28,7 +28,7 @@ interface Student {
   id: string;
   codigo_aluno: string;
   nome?: string;
-  academic_data: { nota: number; nota_min: number; nota_max: number } | null;
+  academic_data: { nota: number } | null;
   survey_responses: SurveyData | null;
 }
 
@@ -41,10 +41,17 @@ function EscolaPage() {
   const [newTurma, setNewTurma] = useState("");
   const [newSerie, setNewSerie] = useState("");
   const [newCodigo, setNewCodigo] = useState("");
-  const [notaInputs, setNotaInputs] = useState<Record<string, { nota: string; min: string; max: string }>>({});
+  const [notaInputs, setNotaInputs] = useState<Record<string, string>>({});
   const [editingSurvey, setEditingSurvey] = useState<string | null>(null);
   const [surveyEdits, setSurveyEdits] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+
+  // nota_min and nota_max calculated from all notas in the class
+  const classNotas = students
+    .map(s => s.academic_data?.nota)
+    .filter((n): n is number => n != null);
+  const notaMin = classNotas.length > 0 ? Math.min(...classNotas) : 0;
+  const notaMax = classNotas.length > 0 ? Math.max(...classNotas) : 10;
 
   useEffect(() => { loadSchool(); }, []);
   useEffect(() => { if (selectedClass) loadStudents(selectedClass); }, [selectedClass]);
@@ -67,7 +74,7 @@ function EscolaPage() {
   async function loadStudents(classId: string) {
     const { data } = await supabase
       .from("students")
-      .select("id, codigo_aluno, nome, academic_data(nota, nota_min, nota_max), survey_responses(s01,s02,s03,s04,s05,s06,s07,s08,s09,s10,s11,s12,s13,s14,s15,s16,s17,s18,s19,s20,e01,e02,e03,e04,e05,e06,e07,e08,e09,e10,e11,e12,e13,e14,e15,e16,e17,e18,e19,e20)")
+      .select("id, codigo_aluno, nome, academic_data(nota), survey_responses(s01,s02,s03,s04,s05,s06,s07,s08,s09,s10,s11,s12,s13,s14,s15,s16,s17,s18,s19,s20,e01,e02,e03,e04,e05,e06,e07,e08,e09,e10,e11,e12,e13,e14,e15,e16,e17,e18,e19,e20)")
       .eq("class_id", classId)
       .order("nome");
 
@@ -78,13 +85,9 @@ function EscolaPage() {
         survey_responses: Array.isArray(s.survey_responses) ? s.survey_responses[0] || null : s.survey_responses,
       }));
       setStudents(mapped);
-      const inputs: Record<string, { nota: string; min: string; max: string }> = {};
+      const inputs: Record<string, string> = {};
       mapped.forEach((s: Student) => {
-        inputs[s.id] = {
-          nota: s.academic_data?.nota?.toString() || "",
-          min: s.academic_data?.nota_min?.toString() || "0",
-          max: s.academic_data?.nota_max?.toString() || "10",
-        };
+        inputs[s.id] = s.academic_data?.nota?.toString() || "";
       });
       setNotaInputs(inputs);
     }
@@ -109,18 +112,18 @@ function EscolaPage() {
   }
 
   async function saveNota(studentId: string) {
-    const input = notaInputs[studentId];
-    if (!input?.nota) return;
+    const nota = notaInputs[studentId];
+    if (!nota) return;
     const payload = {
       student_id: studentId,
-      nota: parseFloat(input.nota),
-      nota_min: parseFloat(input.min || "0"),
-      nota_max: parseFloat(input.max || "10"),
+      nota: parseFloat(nota),
+      nota_min: 0,
+      nota_max: 10,
     };
     const existing = students.find(s => s.id === studentId)?.academic_data;
     let error;
     if (existing) {
-      ({ error } = await supabase.from("academic_data").update(payload).eq("student_id", studentId));
+      ({ error } = await supabase.from("academic_data").update({ nota: payload.nota }).eq("student_id", studentId));
     } else {
       ({ error } = await supabase.from("academic_data").insert(payload));
     }
@@ -161,17 +164,20 @@ function EscolaPage() {
 
   function getSocialDecimal(sr: SurveyData | null): string {
     if (!sr) return "—";
-    return calcSocial(sr as unknown as SurveyRow).toFixed(4);
+    const val = calcSocial(sr as unknown as SurveyRow);
+    return Math.round(val * 100).toString();
   }
 
   function getSocioDecimal(sr: SurveyData | null): string {
     if (!sr) return "—";
-    return calcSocioemocional(sr as unknown as SurveyRow).toFixed(4);
+    const val = calcSocioemocional(sr as unknown as SurveyRow);
+    return Math.round(val * 100).toString();
   }
 
-  function getAcademicoDecimal(ad: Student["academic_data"]): string {
-    if (!ad) return "—";
-    return calcAcademico(ad.nota, ad.nota_min, ad.nota_max).toFixed(4);
+  function getAcademicoDecimal(nota: number | undefined): string {
+    if (nota == null || classNotas.length === 0) return "—";
+    const val = calcAcademico(nota, notaMin, notaMax);
+    return Math.round(val * 100).toString();
   }
 
   if (loading) return <div className="min-h-screen bg-background"><Header /><div className="flex items-center justify-center py-20 text-muted-foreground">Carregando...</div></div>;
@@ -221,6 +227,9 @@ function EscolaPage() {
                   </CardTitle>
                   <CardDescription>
                     {selectedClass ? `${students.length} aluno(s)` : "Selecione uma turma"}
+                    {selectedClass && classNotas.length > 0 && (
+                      <span className="ml-2 text-xs">(Nota mín: {notaMin} | máx: {notaMax})</span>
+                    )}
                   </CardDescription>
                 </div>
                 {selectedClass && (
@@ -242,8 +251,6 @@ function EscolaPage() {
                         <TableHead className="text-center">E (Socioem.)</TableHead>
                         <TableHead className="text-center">A (Acadêm.)</TableHead>
                         <TableHead>Nota</TableHead>
-                        <TableHead>Mín</TableHead>
-                        <TableHead>Máx</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -253,15 +260,9 @@ function EscolaPage() {
                           <TableCell className="font-medium">{s.nome || s.codigo_aluno}</TableCell>
                           <TableCell className="text-center font-mono text-sm">{getSocialDecimal(s.survey_responses)}</TableCell>
                           <TableCell className="text-center font-mono text-sm">{getSocioDecimal(s.survey_responses)}</TableCell>
-                          <TableCell className="text-center font-mono text-sm">{getAcademicoDecimal(s.academic_data)}</TableCell>
+                          <TableCell className="text-center font-mono text-sm">{getAcademicoDecimal(s.academic_data?.nota)}</TableCell>
                           <TableCell>
-                            <Input type="number" step="0.01" className="w-20" value={notaInputs[s.id]?.nota || ""} onChange={e => setNotaInputs(prev => ({ ...prev, [s.id]: { ...prev[s.id], nota: e.target.value } }))} />
-                          </TableCell>
-                          <TableCell>
-                            <Input type="number" step="0.01" className="w-16" value={notaInputs[s.id]?.min || "0"} onChange={e => setNotaInputs(prev => ({ ...prev, [s.id]: { ...prev[s.id], min: e.target.value } }))} />
-                          </TableCell>
-                          <TableCell>
-                            <Input type="number" step="0.01" className="w-16" value={notaInputs[s.id]?.max || "10"} onChange={e => setNotaInputs(prev => ({ ...prev, [s.id]: { ...prev[s.id], max: e.target.value } }))} />
+                            <Input type="number" step="0.01" className="w-20" value={notaInputs[s.id] || ""} onChange={e => setNotaInputs(prev => ({ ...prev, [s.id]: e.target.value }))} />
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
