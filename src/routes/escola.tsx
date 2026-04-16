@@ -164,20 +164,17 @@ function EscolaPage() {
 
   function getSocialDecimal(sr: SurveyData | null): string {
     if (!sr) return "—";
-    const val = calcSocial(sr as unknown as SurveyRow);
-    return Math.round(val * 100).toString();
+    return calcSocial(sr as unknown as SurveyRow).toFixed(4);
   }
 
   function getSocioDecimal(sr: SurveyData | null): string {
     if (!sr) return "—";
-    const val = calcSocioemocional(sr as unknown as SurveyRow);
-    return Math.round(val * 100).toString();
+    return calcSocioemocional(sr as unknown as SurveyRow).toFixed(4);
   }
 
   function getAcademicoDecimal(nota: number | undefined): string {
     if (nota == null || classNotas.length === 0) return "—";
-    const val = calcAcademico(nota, notaMin, notaMax);
-    return Math.round(val * 100).toString();
+    return calcAcademico(nota, notaMin, notaMax).toFixed(4);
   }
 
   if (loading) return <div className="min-h-screen bg-background"><Header /><div className="flex items-center justify-center py-20 text-muted-foreground">Carregando...</div></div>;
