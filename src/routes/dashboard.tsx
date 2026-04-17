@@ -156,7 +156,7 @@ function DashboardPage() {
           name: "Turmas",
         },
       ],
-      layout: {
+      layout: ({
         autosize: true, height: 520,
         xaxis: { title: { text: "|VDI| médio da turma" }, range: [0, VDI_MAX], zeroline: false },
         yaxis: { title: { text: "IEDE da turma" }, range: [0, Math.sqrt(3)], zeroline: false },
