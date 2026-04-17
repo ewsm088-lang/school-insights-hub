@@ -87,23 +87,23 @@ function Index() {
               axis="X"
               label="Acadêmico (A)"
               formula="A = (N - Nmin) / (Nmax - Nmin)"
-              description="Normalização min-max das notas escolares"
+              description="Normalização min-max das notas escolares para o intervalo [0, 1]"
               color="bg-chart-1"
             />
             <AxisCard
               axis="Y"
               label="Social (S)"
-              formula="S = ((P + R + C) / 3 - 1) / 4"
-              subdimensions="P = Participação · R = Respeito · C = Colaboração"
-              description="Média das subdimensões Likert (1-5) normalizada para 0-1"
+              formula="Escala Likert (1–5)"
+              subdimensions="20 itens · Participação, Respeito, Colaboração"
+              description="Resposta dos alunos em escala Likert, normalizada para [0, 1]"
               color="bg-chart-2"
             />
             <AxisCard
               axis="Z"
               label="Socioemocional (E)"
-              formula="E = ((AG + EM + RC) / 3 - 1) / 4"
-              subdimensions="AG = Autogestão · EM = Empatia · RC = Resolução de Conflitos"
-              description="Média das subdimensões Likert (1-5) normalizada para 0-1"
+              formula="Escala Likert (1–5)"
+              subdimensions="20 itens · Autogestão, Empatia, Resolução de Conflitos"
+              description="Resposta dos alunos em escala Likert, normalizada para [0, 1]"
               color="bg-chart-3"
             />
           </div>
@@ -114,14 +114,14 @@ function Index() {
               <h3 className="font-heading font-semibold mb-3">Vetor Democrático Individual (VDI)</h3>
               <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">VDI = (A, S, E)</code>
               <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-3">|VDI| = √(A² + S² + E²)</code>
-              <p className="text-sm text-muted-foreground">Módulo do vetor que representa o estudante no espaço tridimensional</p>
+              <p className="text-sm text-muted-foreground">Módulo do vetor que representa o estudante no espaço tridimensional (0 a √3)</p>
             </div>
             <div className="rounded-xl border bg-card p-6">
               <h3 className="font-heading font-semibold mb-3">Indicadores da Escola</h3>
               <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">IEDE = Σ|VDI| / n</code>
-              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">σ = desvio padrão dos |VDI|</code>
-              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-3">r = correlação de Pearson (S × A)</code>
-              <p className="text-sm text-muted-foreground">IEDE = média dos módulos VDI da escola</p>
+              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">σ = √(Σ(|VDI| − IEDE)² / n)</code>
+              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-3">r = Σ(xᵢ−x̄)(yᵢ−ȳ) / √(Σ(xᵢ−x̄)²·Σ(yᵢ−ȳ)²)</code>
+              <p className="text-sm text-muted-foreground">IEDE = média dos |VDI| · σ = desigualdade interna · r = correlação Social × Acadêmico</p>
             </div>
           </div>
         </div>

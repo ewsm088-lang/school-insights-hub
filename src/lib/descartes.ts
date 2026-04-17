@@ -147,3 +147,40 @@ export function classificar(iede: number): string {
   if (iede >= 0.4) return "Intermediário";
   return "Baixo";
 }
+
+/**
+ * Estatísticas agregadas de uma turma
+ * - iede: média dos |VDI|
+ * - vdiMedio: mesmo que iede (eixo X do scatter de turmas)
+ * - sigma: desvio padrão dos |VDI| (desigualdade interna)
+ * - n: número de alunos
+ */
+export interface TurmaStats {
+  classId: string;
+  nome: string; // ex: "1° A"
+  iede: number;
+  vdiMedio: number;
+  sigma: number;
+  n: number;
+  aMedio: number;
+  sMedio: number;
+  eMedio: number;
+}
+
+export function calcTurmaStats(
+  classId: string,
+  nome: string,
+  vdis: VDIResult[]
+): TurmaStats {
+  const iede = calcIEDE(vdis);
+  const sigma = calcDesvioPadrao(vdis);
+  const n = vdis.length;
+  const aMedio = n ? vdis.reduce((s, v) => s + v.A, 0) / n : 0;
+  const sMedio = n ? vdis.reduce((s, v) => s + v.S, 0) / n : 0;
+  const eMedio = n ? vdis.reduce((s, v) => s + v.E, 0) / n : 0;
+  return { classId, nome, iede, vdiMedio: iede, sigma, n, aMedio, sMedio, eMedio };
+}
+
+/** Limite teórico de |VDI| = √3 (quando A=S=E=1) */
+export const VDI_MAX = Math.sqrt(3);
+
