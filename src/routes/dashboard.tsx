@@ -201,55 +201,90 @@ function DashboardPage() {
     };
   }, [filteredVdis]);
 
-  // 3. Aluno × Turma — só faz sentido com turma específica
+  // 3. Aluno × Turma — |VDI| × IEDE (modelo adaptado de Turmas)
   const turmaPlot = useMemo(() => {
     if (selectedClass === "all" || filteredVdis.length === 0) return null;
+    const iede = calcIEDE(filteredVdis);
     return {
       data: [{
         type: "scatter" as any, mode: "markers+text",
-        x: filteredVdis.map(d => d.S), y: filteredVdis.map(d => d.E),
+        x: filteredVdis.map(d => d.modulo),
+        y: Array(filteredVdis.length).fill(iede),
         text: filteredVdis.map(d => d.nome), textposition: "top center", textfont: { size: 9 },
-        marker: { size: 12, color: "oklch(0.45 0.18 250)" },
-        hovertemplate: filteredVdis.map(d => `<b>${d.nome}</b><br>S: ${d.S.toFixed(3)}<br>E: ${d.E.toFixed(3)}<br>|VDI|: ${d.modulo.toFixed(3)}<extra></extra>`),
+        marker: {
+          size: 12,
+          color: filteredVdis.map(d => d.modulo),
+          colorscale: "Viridis",
+          line: { color: "rgba(0,0,0,0.4)", width: 1 },
+          colorbar: { title: { text: "|VDI|" }, thickness: 12 },
+        },
+        hovertemplate: filteredVdis.map(d => `<b>${d.nome}</b><br>|VDI|: ${d.modulo.toFixed(3)}<br>A: ${d.A.toFixed(3)}<br>S: ${d.S.toFixed(3)}<br>E: ${d.E.toFixed(3)}<br>IEDE turma: ${iede.toFixed(3)}<extra></extra>`),
       }],
       layout: {
         autosize: true, height: 450,
-        xaxis: { title: { text: "Social (S)" }, range: [0, 1] },
-        yaxis: { title: { text: "Socioemocional (E)" }, range: [0, 1] },
+        xaxis: { title: { text: "|VDI| do aluno" }, range: [0, Math.sqrt(3)] },
+        yaxis: { title: { text: "IEDE da turma" }, range: [0, Math.sqrt(3)] },
+        shapes: [
+          {
+            type: "line",
+            x0: 0, x1: Math.sqrt(3),
+            y0: iede, y1: iede,
+            line: { color: "rgba(0,0,0,0.2)", width: 2, dash: "dash" },
+          },
+        ],
         paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-        margin: { l: 50, r: 20, t: 30, b: 50 },
+        margin: { l: 60, r: 80, t: 30, b: 60 },
       },
     };
   }, [filteredVdis, selectedClass]);
 
-  // 4. Aluno × Escola — destaca alunos da turma selecionada
+  // 4. Aluno × Escola — |VDI| × IEDE com layers (modelo adaptado de Turmas)
   const escolaPlot = useMemo(() => {
     if (vdis.length === 0) return null;
     const isHighlighted = (v: VDIExtra) => selectedClass !== "all" && v.classId === selectedClass;
     const others = vdis.filter(v => !isHighlighted(v));
     const highlighted = vdis.filter(isHighlighted);
+    const iedeEscolaRef = calcIEDE(vdis);
     const traces: any[] = [{
       type: "scatter", mode: "markers", name: "Outros alunos",
-      x: others.map(v => v.S), y: others.map(v => v.E),
+      x: others.map(v => v.modulo), y: Array(others.length).fill(iedeEscolaRef),
       text: others.map(v => `${v.nome} (${v.serie} ${v.turma})`),
-      marker: { size: 7, color: "oklch(0.7 0.02 250 / 0.5)" },
+      marker: {
+        size: 7,
+        color: others.map(v => v.modulo),
+        colorscale: "Viridis",
+        opacity: 0.5,
+      },
     }];
     if (highlighted.length) {
       traces.push({
         type: "scatter", mode: "markers+text", name: "Turma selecionada",
-        x: highlighted.map(v => v.S), y: highlighted.map(v => v.E),
+        x: highlighted.map(v => v.modulo), y: Array(highlighted.length).fill(iedeEscolaRef),
         text: highlighted.map(v => v.nome), textposition: "top center", textfont: { size: 9 },
-        marker: { size: 11, color: "oklch(0.55 0.22 30)", line: { color: "white", width: 1 } },
+        marker: {
+          size: 11,
+          color: highlighted.map(v => v.modulo),
+          colorscale: "Viridis",
+          line: { color: "white", width: 1 },
+        },
       });
     }
     return {
       data: traces,
       layout: {
         autosize: true, height: 450,
-        xaxis: { title: { text: "Social (S)" }, range: [0, 1] },
-        yaxis: { title: { text: "Socioemocional (E)" }, range: [0, 1] },
+        xaxis: { title: { text: "|VDI| do aluno" }, range: [0, Math.sqrt(3)] },
+        yaxis: { title: { text: "IEDE da escola" }, range: [0, Math.sqrt(3)] },
+        shapes: [
+          {
+            type: "line",
+            x0: 0, x1: Math.sqrt(3),
+            y0: iedeEscolaRef, y1: iedeEscolaRef,
+            line: { color: "rgba(0,0,0,0.2)", width: 2, dash: "dash" },
+          },
+        ],
         paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-        margin: { l: 50, r: 20, t: 30, b: 50 },
+        margin: { l: 60, r: 80, t: 30, b: 60 },
         showlegend: highlighted.length > 0,
       },
     };
