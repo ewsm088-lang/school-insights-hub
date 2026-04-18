@@ -226,10 +226,10 @@ function DashboardPage() {
         yaxis: { title: { text: "IEDE da turma" }, range: [0, Math.sqrt(3)] },
         shapes: [
           {
-            type: "line",
+            type: "line" as const,
             x0: 0, x1: Math.sqrt(3),
             y0: iede, y1: iede,
-            line: { color: "rgba(0,0,0,0.2)", width: 2, dash: "dash" },
+            line: { color: "rgba(0,0,0,0.2)", width: 2, dash: "dash" as const },
           },
         ],
         paper_bgcolor: "transparent", plot_bgcolor: "transparent",
@@ -277,10 +277,10 @@ function DashboardPage() {
         yaxis: { title: { text: "IEDE da escola" }, range: [0, Math.sqrt(3)] },
         shapes: [
           {
-            type: "line",
+            type: "line" as const,
             x0: 0, x1: Math.sqrt(3),
             y0: iedeEscolaRef, y1: iedeEscolaRef,
-            line: { color: "rgba(0,0,0,0.2)", width: 2, dash: "dash" },
+            line: { color: "rgba(0,0,0,0.2)", width: 2, dash: "dash" as const },
           },
         ],
         paper_bgcolor: "transparent", plot_bgcolor: "transparent",
