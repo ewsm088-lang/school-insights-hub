@@ -201,28 +201,25 @@ function DashboardPage() {
     };
   }, [filteredVdis]);
 
-  // Helper: "convivência individual" do aluno = média(S, E) — análogo ao IEDE para turmas
-  const conviv = (v: VDIExtra) => (v.S + v.E) / 2;
-
-  // 3. Aluno × Turma — mesmo modelo do scatter de Turmas (X=|VDI|, Y=convivência, tamanho=|desvio|, cor=diff vs IEDE turma)
+  // 3. Aluno × Turma — X=|VDI| do aluno, Y=IEDE da turma (linha reta, igual modelo de Turmas)
   const turmaPlot = useMemo(() => {
     if (selectedClass === "all" || filteredVdis.length === 0) return null;
     const iedeTurma = calcIEDE(filteredVdis);
     const vdiMedio = filteredVdis.reduce((s, v) => s + v.modulo, 0) / filteredVdis.length;
     const desvios = filteredVdis.map(v => Math.abs(v.modulo - vdiMedio));
     const desvMax = Math.max(...desvios, 0.0001);
-    const colorRange = Math.max(0.1, Math.abs(iedeTurma));
+    const colorRange = Math.max(0.1, vdiMedio);
     return {
       data: [{
         type: "scatter" as any, mode: "markers+text",
         x: filteredVdis.map(v => v.modulo),
-        y: filteredVdis.map(conviv),
+        y: filteredVdis.map(() => iedeTurma),
         text: filteredVdis.map(v => v.nome), textposition: "top center", textfont: { size: 10 },
         hovertemplate: filteredVdis.map(v =>
-          `<b>${v.nome}</b><br>|VDI|: ${v.modulo.toFixed(3)}<br>A: ${v.A.toFixed(3)}<br>S: ${v.S.toFixed(3)}<br>E: ${v.E.toFixed(3)}<br>Convivência: ${conviv(v).toFixed(3)}<extra></extra>`
+          `<b>${v.nome}</b><br>|VDI|: ${v.modulo.toFixed(3)}<br>A: ${v.A.toFixed(3)}<br>S: ${v.S.toFixed(3)}<br>E: ${v.E.toFixed(3)}<br>IEDE turma: ${iedeTurma.toFixed(3)}<extra></extra>`
         ),
         marker: {
-          size: filteredVdis.map((_, i) => 10 + (desvios[i] / desvMax) * 24),
+          size: filteredVdis.map((_, i) => 12 + (desvios[i] / desvMax) * 28),
           color: filteredVdis.map(v => v.modulo - vdiMedio),
           colorscale: "RdYlGn",
           cmin: -colorRange, cmax: colorRange, cmid: 0,
@@ -234,17 +231,13 @@ function DashboardPage() {
       layout: ({
         autosize: true, height: 520,
         xaxis: { title: { text: "|VDI| do aluno" }, range: [0, VDI_MAX], zeroline: false },
-        yaxis: { title: { text: "Convivência (média S, E)" }, range: [0, 1], zeroline: false },
+        yaxis: { title: { text: "IEDE da turma" }, range: [0, VDI_MAX], zeroline: false },
         shapes: [
-          { type: "line", x0: vdiMedio, x1: vdiMedio, y0: 0, y1: 1, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
+          { type: "line", x0: vdiMedio, x1: vdiMedio, y0: 0, y1: VDI_MAX, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
           { type: "line", x0: 0, x1: VDI_MAX, y0: iedeTurma, y1: iedeTurma, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
         ],
         annotations: [
-          { x: VDI_MAX * 0.97, y: 0.97, text: "↗ Alto |VDI|<br>+ alta convivência", showarrow: false, font: { size: 10, color: "rgba(34,139,34,0.8)" }, xanchor: "right", yanchor: "top" },
-          { x: 0.03, y: 0.97, text: "↖ Alta convivência<br>+ baixo |VDI|", showarrow: false, font: { size: 10, color: "rgba(180,140,0,0.8)" }, xanchor: "left", yanchor: "top" },
-          { x: VDI_MAX * 0.97, y: 0.03, text: "↘ Alto |VDI|<br>+ baixa convivência", showarrow: false, font: { size: 10, color: "rgba(180,140,0,0.8)" }, xanchor: "right", yanchor: "bottom" },
-          { x: 0.03, y: 0.03, text: "↙ Baixo |VDI|<br>+ baixa convivência", showarrow: false, font: { size: 10, color: "rgba(180,30,30,0.8)" }, xanchor: "left", yanchor: "bottom" },
-          { x: vdiMedio, y: 1, text: `|VDI| médio = ${vdiMedio.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, yanchor: "bottom" },
+          { x: vdiMedio, y: VDI_MAX, text: `|VDI| médio = ${vdiMedio.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, yanchor: "bottom" },
           { x: VDI_MAX, y: iedeTurma, text: `IEDE turma = ${iedeTurma.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, xanchor: "right", yanchor: "bottom" },
         ],
         paper_bgcolor: "transparent", plot_bgcolor: "transparent",
@@ -254,12 +247,12 @@ function DashboardPage() {
     };
   }, [filteredVdis, selectedClass]);
 
-  // 4. Aluno × Escola — mesmo modelo, com destaque da turma selecionada
+  // 4. Aluno × Escola — X=|VDI| do aluno, Y=IEDE da escola (linha reta), com destaque da turma
   const escolaPlot = useMemo(() => {
     if (vdis.length === 0) return null;
     const isHighlighted = (v: VDIExtra) => selectedClass !== "all" && v.classId === selectedClass;
     const vdiMedio = vdis.reduce((s, v) => s + v.modulo, 0) / vdis.length;
-    const colorRange = Math.max(0.1, Math.abs(iedeEscola));
+    const colorRange = Math.max(0.1, vdiMedio);
     const desvios = vdis.map(v => Math.abs(v.modulo - vdiMedio));
     const desvMax = Math.max(...desvios, 0.0001);
 
@@ -271,10 +264,10 @@ function DashboardPage() {
     const traces: any[] = [{
       type: "scatter", mode: "markers", name: "Outros alunos",
       x: others.map(v => v.modulo),
-      y: others.map(conviv),
+      y: others.map(() => iedeEscola),
       text: others.map(v => `${v.nome} (${v.serie ?? ""} ${v.turma ?? ""})`),
       hovertemplate: others.map(v =>
-        `<b>${v.nome}</b><br>${v.serie ?? ""} ${v.turma ?? ""}<br>|VDI|: ${v.modulo.toFixed(3)}<br>Convivência: ${conviv(v).toFixed(3)}<extra></extra>`
+        `<b>${v.nome}</b><br>${v.serie ?? ""} ${v.turma ?? ""}<br>|VDI|: ${v.modulo.toFixed(3)}<br>IEDE escola: ${iedeEscola.toFixed(3)}<extra></extra>`
       ),
       marker: {
         size: otherIdx.map(i => 8 + (desvios[i] / desvMax) * 18),
@@ -291,10 +284,10 @@ function DashboardPage() {
       traces.push({
         type: "scatter", mode: "markers+text", name: "Turma selecionada",
         x: highlighted.map(v => v.modulo),
-        y: highlighted.map(conviv),
+        y: highlighted.map(() => iedeEscola),
         text: highlighted.map(v => v.nome), textposition: "top center", textfont: { size: 10 },
         hovertemplate: highlighted.map(v =>
-          `<b>${v.nome}</b><br>|VDI|: ${v.modulo.toFixed(3)}<br>Convivência: ${conviv(v).toFixed(3)}<extra></extra>`
+          `<b>${v.nome}</b><br>|VDI|: ${v.modulo.toFixed(3)}<br>IEDE escola: ${iedeEscola.toFixed(3)}<extra></extra>`
         ),
         marker: {
           size: highIdx.map(i => 12 + (desvios[i] / desvMax) * 22),
@@ -312,17 +305,13 @@ function DashboardPage() {
       layout: ({
         autosize: true, height: 520,
         xaxis: { title: { text: "|VDI| do aluno" }, range: [0, VDI_MAX], zeroline: false },
-        yaxis: { title: { text: "Convivência (média S, E)" }, range: [0, 1], zeroline: false },
+        yaxis: { title: { text: "IEDE da escola" }, range: [0, VDI_MAX], zeroline: false },
         shapes: [
-          { type: "line", x0: vdiMedio, x1: vdiMedio, y0: 0, y1: 1, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
+          { type: "line", x0: vdiMedio, x1: vdiMedio, y0: 0, y1: VDI_MAX, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
           { type: "line", x0: 0, x1: VDI_MAX, y0: iedeEscola, y1: iedeEscola, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
         ],
         annotations: [
-          { x: VDI_MAX * 0.97, y: 0.97, text: "↗ Alto |VDI|<br>+ alta convivência", showarrow: false, font: { size: 10, color: "rgba(34,139,34,0.8)" }, xanchor: "right", yanchor: "top" },
-          { x: 0.03, y: 0.97, text: "↖ Alta convivência<br>+ baixo |VDI|", showarrow: false, font: { size: 10, color: "rgba(180,140,0,0.8)" }, xanchor: "left", yanchor: "top" },
-          { x: VDI_MAX * 0.97, y: 0.03, text: "↘ Alto |VDI|<br>+ baixa convivência", showarrow: false, font: { size: 10, color: "rgba(180,140,0,0.8)" }, xanchor: "right", yanchor: "bottom" },
-          { x: 0.03, y: 0.03, text: "↙ Baixo |VDI|<br>+ baixa convivência", showarrow: false, font: { size: 10, color: "rgba(180,30,30,0.8)" }, xanchor: "left", yanchor: "bottom" },
-          { x: vdiMedio, y: 1, text: `|VDI| médio = ${vdiMedio.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, yanchor: "bottom" },
+          { x: vdiMedio, y: VDI_MAX, text: `|VDI| médio = ${vdiMedio.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, yanchor: "bottom" },
           { x: VDI_MAX, y: iedeEscola, text: `IEDE escola = ${iedeEscola.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, xanchor: "right", yanchor: "bottom" },
         ],
         paper_bgcolor: "transparent", plot_bgcolor: "transparent",
