@@ -201,94 +201,136 @@ function DashboardPage() {
     };
   }, [filteredVdis]);
 
-  // 3. Aluno × Turma — |VDI| × IEDE (modelo adaptado de Turmas)
+  // Helper: "convivência individual" do aluno = média(S, E) — análogo ao IEDE para turmas
+  const conviv = (v: VDIExtra) => (v.S + v.E) / 2;
+
+  // 3. Aluno × Turma — mesmo modelo do scatter de Turmas (X=|VDI|, Y=convivência, tamanho=|desvio|, cor=diff vs IEDE turma)
   const turmaPlot = useMemo(() => {
     if (selectedClass === "all" || filteredVdis.length === 0) return null;
-    const iede = calcIEDE(filteredVdis);
+    const iedeTurma = calcIEDE(filteredVdis);
+    const vdiMedio = filteredVdis.reduce((s, v) => s + v.modulo, 0) / filteredVdis.length;
+    const desvios = filteredVdis.map(v => Math.abs(v.modulo - vdiMedio));
+    const desvMax = Math.max(...desvios, 0.0001);
+    const colorRange = Math.max(0.1, Math.abs(iedeTurma));
     return {
       data: [{
         type: "scatter" as any, mode: "markers+text",
-        x: filteredVdis.map(d => d.modulo),
-        y: Array(filteredVdis.length).fill(iede),
-        text: filteredVdis.map(d => d.nome), textposition: "top center", textfont: { size: 9 },
+        x: filteredVdis.map(v => v.modulo),
+        y: filteredVdis.map(conviv),
+        text: filteredVdis.map(v => v.nome), textposition: "top center", textfont: { size: 10 },
+        hovertemplate: filteredVdis.map(v =>
+          `<b>${v.nome}</b><br>|VDI|: ${v.modulo.toFixed(3)}<br>A: ${v.A.toFixed(3)}<br>S: ${v.S.toFixed(3)}<br>E: ${v.E.toFixed(3)}<br>Convivência: ${conviv(v).toFixed(3)}<extra></extra>`
+        ),
         marker: {
-          size: 12,
-          color: filteredVdis.map(d => d.modulo),
-          colorscale: "Viridis",
+          size: filteredVdis.map((_, i) => 10 + (desvios[i] / desvMax) * 24),
+          color: filteredVdis.map(v => v.modulo - vdiMedio),
+          colorscale: "RdYlGn",
+          cmin: -colorRange, cmax: colorRange, cmid: 0,
           line: { color: "rgba(0,0,0,0.4)", width: 1 },
-          colorbar: { title: { text: "|VDI|" }, thickness: 12 },
+          colorbar: { title: { text: "|VDI| − média" }, thickness: 12 },
         },
-        hovertemplate: filteredVdis.map(d => `<b>${d.nome}</b><br>|VDI|: ${d.modulo.toFixed(3)}<br>A: ${d.A.toFixed(3)}<br>S: ${d.S.toFixed(3)}<br>E: ${d.E.toFixed(3)}<br>IEDE turma: ${iede.toFixed(3)}<extra></extra>`),
+        name: "Alunos",
       }],
-      layout: {
-        autosize: true, height: 450,
-        xaxis: { title: { text: "|VDI| do aluno" }, range: [0, Math.sqrt(3)] },
-        yaxis: { title: { text: "IEDE da turma" }, range: [0, Math.sqrt(3)] },
+      layout: ({
+        autosize: true, height: 520,
+        xaxis: { title: { text: "|VDI| do aluno" }, range: [0, VDI_MAX], zeroline: false },
+        yaxis: { title: { text: "Convivência (média S, E)" }, range: [0, 1], zeroline: false },
         shapes: [
-          {
-            type: "line" as const,
-            x0: 0, x1: Math.sqrt(3),
-            y0: iede, y1: iede,
-            line: { color: "rgba(0,0,0,0.2)", width: 2, dash: "dash" as const },
-          },
+          { type: "line", x0: vdiMedio, x1: vdiMedio, y0: 0, y1: 1, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
+          { type: "line", x0: 0, x1: VDI_MAX, y0: iedeTurma, y1: iedeTurma, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
+        ],
+        annotations: [
+          { x: VDI_MAX * 0.97, y: 0.97, text: "↗ Alto |VDI|<br>+ alta convivência", showarrow: false, font: { size: 10, color: "rgba(34,139,34,0.8)" }, xanchor: "right", yanchor: "top" },
+          { x: 0.03, y: 0.97, text: "↖ Alta convivência<br>+ baixo |VDI|", showarrow: false, font: { size: 10, color: "rgba(180,140,0,0.8)" }, xanchor: "left", yanchor: "top" },
+          { x: VDI_MAX * 0.97, y: 0.03, text: "↘ Alto |VDI|<br>+ baixa convivência", showarrow: false, font: { size: 10, color: "rgba(180,140,0,0.8)" }, xanchor: "right", yanchor: "bottom" },
+          { x: 0.03, y: 0.03, text: "↙ Baixo |VDI|<br>+ baixa convivência", showarrow: false, font: { size: 10, color: "rgba(180,30,30,0.8)" }, xanchor: "left", yanchor: "bottom" },
+          { x: vdiMedio, y: 1, text: `|VDI| médio = ${vdiMedio.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, yanchor: "bottom" },
+          { x: VDI_MAX, y: iedeTurma, text: `IEDE turma = ${iedeTurma.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, xanchor: "right", yanchor: "bottom" },
         ],
         paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-        margin: { l: 60, r: 80, t: 30, b: 60 },
-      },
+        margin: { l: 60, r: 30, t: 30, b: 60 },
+        showlegend: false,
+      } as any),
     };
   }, [filteredVdis, selectedClass]);
 
-  // 4. Aluno × Escola — |VDI| × IEDE com layers (modelo adaptado de Turmas)
+  // 4. Aluno × Escola — mesmo modelo, com destaque da turma selecionada
   const escolaPlot = useMemo(() => {
     if (vdis.length === 0) return null;
     const isHighlighted = (v: VDIExtra) => selectedClass !== "all" && v.classId === selectedClass;
+    const vdiMedio = vdis.reduce((s, v) => s + v.modulo, 0) / vdis.length;
+    const colorRange = Math.max(0.1, Math.abs(iedeEscola));
+    const desvios = vdis.map(v => Math.abs(v.modulo - vdiMedio));
+    const desvMax = Math.max(...desvios, 0.0001);
+
     const others = vdis.filter(v => !isHighlighted(v));
     const highlighted = vdis.filter(isHighlighted);
-    const iedeEscolaRef = calcIEDE(vdis);
+    const otherIdx = vdis.map((v, i) => isHighlighted(v) ? -1 : i).filter(i => i >= 0);
+    const highIdx = vdis.map((v, i) => isHighlighted(v) ? i : -1).filter(i => i >= 0);
+
     const traces: any[] = [{
       type: "scatter", mode: "markers", name: "Outros alunos",
-      x: others.map(v => v.modulo), y: Array(others.length).fill(iedeEscolaRef),
-      text: others.map(v => `${v.nome} (${v.serie} ${v.turma})`),
+      x: others.map(v => v.modulo),
+      y: others.map(conviv),
+      text: others.map(v => `${v.nome} (${v.serie ?? ""} ${v.turma ?? ""})`),
+      hovertemplate: others.map(v =>
+        `<b>${v.nome}</b><br>${v.serie ?? ""} ${v.turma ?? ""}<br>|VDI|: ${v.modulo.toFixed(3)}<br>Convivência: ${conviv(v).toFixed(3)}<extra></extra>`
+      ),
       marker: {
-        size: 7,
-        color: others.map(v => v.modulo),
-        colorscale: "Viridis",
-        opacity: 0.5,
+        size: otherIdx.map(i => 8 + (desvios[i] / desvMax) * 18),
+        color: others.map(v => v.modulo - vdiMedio),
+        colorscale: "RdYlGn",
+        cmin: -colorRange, cmax: colorRange, cmid: 0,
+        opacity: highlighted.length ? 0.45 : 0.85,
+        line: { color: "rgba(0,0,0,0.3)", width: 0.5 },
+        colorbar: { title: { text: "|VDI| − média" }, thickness: 12 },
       },
     }];
+
     if (highlighted.length) {
       traces.push({
         type: "scatter", mode: "markers+text", name: "Turma selecionada",
-        x: highlighted.map(v => v.modulo), y: Array(highlighted.length).fill(iedeEscolaRef),
-        text: highlighted.map(v => v.nome), textposition: "top center", textfont: { size: 9 },
+        x: highlighted.map(v => v.modulo),
+        y: highlighted.map(conviv),
+        text: highlighted.map(v => v.nome), textposition: "top center", textfont: { size: 10 },
+        hovertemplate: highlighted.map(v =>
+          `<b>${v.nome}</b><br>|VDI|: ${v.modulo.toFixed(3)}<br>Convivência: ${conviv(v).toFixed(3)}<extra></extra>`
+        ),
         marker: {
-          size: 11,
-          color: highlighted.map(v => v.modulo),
-          colorscale: "Viridis",
-          line: { color: "white", width: 1 },
+          size: highIdx.map(i => 12 + (desvios[i] / desvMax) * 22),
+          color: highlighted.map(v => v.modulo - vdiMedio),
+          colorscale: "RdYlGn",
+          cmin: -colorRange, cmax: colorRange, cmid: 0,
+          showscale: false,
+          line: { color: "white", width: 2 },
         },
       });
     }
+
     return {
       data: traces,
-      layout: {
-        autosize: true, height: 450,
-        xaxis: { title: { text: "|VDI| do aluno" }, range: [0, Math.sqrt(3)] },
-        yaxis: { title: { text: "IEDE da escola" }, range: [0, Math.sqrt(3)] },
+      layout: ({
+        autosize: true, height: 520,
+        xaxis: { title: { text: "|VDI| do aluno" }, range: [0, VDI_MAX], zeroline: false },
+        yaxis: { title: { text: "Convivência (média S, E)" }, range: [0, 1], zeroline: false },
         shapes: [
-          {
-            type: "line" as const,
-            x0: 0, x1: Math.sqrt(3),
-            y0: iedeEscolaRef, y1: iedeEscolaRef,
-            line: { color: "rgba(0,0,0,0.2)", width: 2, dash: "dash" as const },
-          },
+          { type: "line", x0: vdiMedio, x1: vdiMedio, y0: 0, y1: 1, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
+          { type: "line", x0: 0, x1: VDI_MAX, y0: iedeEscola, y1: iedeEscola, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
+        ],
+        annotations: [
+          { x: VDI_MAX * 0.97, y: 0.97, text: "↗ Alto |VDI|<br>+ alta convivência", showarrow: false, font: { size: 10, color: "rgba(34,139,34,0.8)" }, xanchor: "right", yanchor: "top" },
+          { x: 0.03, y: 0.97, text: "↖ Alta convivência<br>+ baixo |VDI|", showarrow: false, font: { size: 10, color: "rgba(180,140,0,0.8)" }, xanchor: "left", yanchor: "top" },
+          { x: VDI_MAX * 0.97, y: 0.03, text: "↘ Alto |VDI|<br>+ baixa convivência", showarrow: false, font: { size: 10, color: "rgba(180,140,0,0.8)" }, xanchor: "right", yanchor: "bottom" },
+          { x: 0.03, y: 0.03, text: "↙ Baixo |VDI|<br>+ baixa convivência", showarrow: false, font: { size: 10, color: "rgba(180,30,30,0.8)" }, xanchor: "left", yanchor: "bottom" },
+          { x: vdiMedio, y: 1, text: `|VDI| médio = ${vdiMedio.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, yanchor: "bottom" },
+          { x: VDI_MAX, y: iedeEscola, text: `IEDE escola = ${iedeEscola.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, xanchor: "right", yanchor: "bottom" },
         ],
         paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-        margin: { l: 60, r: 80, t: 30, b: 60 },
+        margin: { l: 60, r: 30, t: 30, b: 60 },
         showlegend: highlighted.length > 0,
-      },
+      } as any),
     };
-  }, [vdis, selectedClass]);
+  }, [vdis, selectedClass, iedeEscola]);
 
   // 5. Pearson (regressão linear)
   const pearsonPlot = useMemo(() => {
