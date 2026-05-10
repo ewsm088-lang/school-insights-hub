@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  calcVDI, calcIEDE, calcDesvioPadrao, calcPearson, classificar, calcTurmaStats,
+  calcVDI, calcIEDE, calcDesvioPadrao, calcPearson, classificar,
   VDI_MAX, type VDIResult, type StudentData, type SurveyRow,
   SOCIAL_KEYS, SOCIO_KEYS,
 } from "@/lib/descartes";
@@ -25,6 +25,39 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 type VDIExtra = VDIResult & { serie?: string; turma?: string };
+type Centroid = { A: number; S: number; E: number };
+
+function centroid(items: { A: number; S: number; E: number }[]): Centroid {
+  const n = items.length || 1;
+  return {
+    A: items.reduce((s, v) => s + v.A, 0) / n,
+    S: items.reduce((s, v) => s + v.S, 0) / n,
+    E: items.reduce((s, v) => s + v.E, 0) / n,
+  };
+}
+
+function dist(a: { A: number; S: number; E: number }, b: Centroid): number {
+  return Math.sqrt((a.A - b.A) ** 2 + (a.S - b.S) ** 2 + (a.E - b.E) ** 2);
+}
+
+// Paleta sóbria
+const COLORS = {
+  primary: "oklch(0.45 0.15 250)",      // azul navy
+  accent: "oklch(0.65 0.18 30)",        // laranja acadêmico
+  muted: "oklch(0.7 0.02 250)",         // cinza
+  centroidTurma: "oklch(0.55 0.22 30)", // laranja
+  centroidEscola: "oklch(0.3 0.05 250)",// navy escuro
+  ok: "oklch(0.6 0.15 145)",
+  warn: "oklch(0.7 0.18 60)",
+  bad: "oklch(0.55 0.22 25)",
+};
+
+const baseLayout = {
+  paper_bgcolor: "transparent",
+  plot_bgcolor: "transparent",
+  font: { family: "DM Sans, sans-serif", size: 12, color: "oklch(0.3 0.02 250)" },
+  margin: { l: 60, r: 30, t: 30, b: 60 },
+};
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -89,7 +122,6 @@ function DashboardPage() {
     setLoading(false);
   }
 
-  // ============= Memoized aggregations =============
   const filteredVdis = useMemo(
     () => selectedClass === "all" ? vdis : vdis.filter(v => v.classId === selectedClass),
     [vdis, selectedClass]
@@ -102,253 +134,270 @@ function DashboardPage() {
     [filteredVdis]
   );
 
-  // School-wide IEDE (sempre da escola toda, não filtrado)
-  const iedeEscola = useMemo(() => calcIEDE(vdis), [vdis]);
-
-  // Stats por turma (escola inteira)
-  const turmasStats = useMemo(() => {
+  // ===== Centroides =====
+  const centroidEscola = useMemo(() => centroid(vdis), [vdis]);
+  const centroidesTurmas = useMemo(() => {
     const map = new Map<string, VDIExtra[]>();
     for (const v of vdis) {
       if (!map.has(v.classId)) map.set(v.classId, []);
       map.get(v.classId)!.push(v);
     }
     return Array.from(map.entries()).map(([cid, arr]) => {
+      const c = centroid(arr);
       const first = arr[0];
       const nome = `${first.serie ?? ""} ${first.turma ?? ""}`.trim();
-      return calcTurmaStats(cid, nome, arr);
+      const iedeT = calcIEDE(arr);
+      const sigma = calcDesvioPadrao(arr);
+      const distEscola = dist(c, centroidEscola);
+      return { classId: cid, nome, centroide: c, iede: iedeT, sigma, n: arr.length, distEscola };
     });
-  }, [vdis]);
+  }, [vdis, centroidEscola]);
 
-  // VDI médio das turmas (linha de referência vertical)
-  const vdiMedioEscola = useMemo(() => {
-    if (turmasStats.length === 0) return 0;
-    return turmasStats.reduce((s, t) => s + t.vdiMedio, 0) / turmasStats.length;
-  }, [turmasStats]);
+  const centroidTurmaSel = useMemo(() => {
+    if (selectedClass === "all") return null;
+    return centroidesTurmas.find(t => t.classId === selectedClass)?.centroide ?? null;
+  }, [centroidesTurmas, selectedClass]);
 
-  // ============= Plot data (memoized) =============
-
-  // 1. Scatter de turmas (VDI × IEDE)
-  const turmasPlot = useMemo(() => {
-    if (turmasStats.length === 0) return null;
-    const sigmas = turmasStats.map(t => t.sigma);
-    const sigmaMax = Math.max(...sigmas, 0.0001);
-    return {
-      data: [
-        {
-          type: "scatter" as any, mode: "markers+text",
-          x: turmasStats.map(t => t.vdiMedio),
-          y: turmasStats.map(t => t.iede),
-          text: turmasStats.map(t => t.nome),
-          textposition: "top center", textfont: { size: 10 },
-          hovertemplate: turmasStats.map(t =>
-            `<b>${t.nome}</b><br>|VDI| médio: ${t.vdiMedio.toFixed(3)}<br>IEDE: ${t.iede.toFixed(3)}<br>σ: ${t.sigma.toFixed(3)}<br>n alunos: ${t.n}<extra></extra>`
-          ),
-          marker: {
-            size: turmasStats.map(t => 12 + (t.sigma / sigmaMax) * 28), // 12-40px
-            color: turmasStats.map(t => t.iede - iedeEscola), // diff vs média
-            colorscale: "RdYlGn",
-            cmin: -Math.max(0.1, Math.abs(iedeEscola)),
-            cmax: Math.max(0.1, Math.abs(iedeEscola)),
-            cmid: 0,
-            line: { color: "rgba(0,0,0,0.4)", width: 1 },
-            colorbar: { title: { text: "IEDE − média" }, thickness: 12 },
-          },
-          name: "Turmas",
-        },
-      ],
-      layout: ({
-        autosize: true, height: 520,
-        xaxis: { title: { text: "|VDI| médio da turma" }, range: [0, VDI_MAX], zeroline: false },
-        yaxis: { title: { text: "IEDE da turma" }, range: [0, Math.sqrt(3)], zeroline: false },
-        shapes: [
-          { type: "line", x0: vdiMedioEscola, x1: vdiMedioEscola, y0: 0, y1: VDI_MAX, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
-          { type: "line", x0: 0, x1: VDI_MAX, y0: iedeEscola, y1: iedeEscola, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
-        ],
-        annotations: [
-          { x: VDI_MAX * 0.97, y: VDI_MAX * 0.97, text: "↗ Alta convivência<br>+ alta democracia", showarrow: false, font: { size: 10, color: "rgba(34,139,34,0.8)" }, xanchor: "right", yanchor: "top" },
-          { x: 0.03, y: VDI_MAX * 0.97, text: "↖ Alta democracia<br>+ baixa convivência", showarrow: false, font: { size: 10, color: "rgba(180,140,0,0.8)" }, xanchor: "left", yanchor: "top" },
-          { x: VDI_MAX * 0.97, y: 0.03, text: "↘ Boa convivência<br>+ baixa democracia", showarrow: false, font: { size: 10, color: "rgba(180,140,0,0.8)" }, xanchor: "right", yanchor: "bottom" },
-          { x: 0.03, y: 0.03, text: "↙ Baixa convivência<br>+ baixa democracia", showarrow: false, font: { size: 10, color: "rgba(180,30,30,0.8)" }, xanchor: "left", yanchor: "bottom" },
-          { x: vdiMedioEscola, y: VDI_MAX, text: `|VDI| médio = ${vdiMedioEscola.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, yanchor: "bottom" },
-          { x: VDI_MAX, y: iedeEscola, text: `IEDE médio = ${iedeEscola.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, xanchor: "right", yanchor: "bottom" },
-        ],
-        paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-        margin: { l: 60, r: 30, t: 30, b: 60 },
-        showlegend: false,
-      } as any),
-    };
-  }, [turmasStats, iedeEscola, vdiMedioEscola]);
-
-  // 2. 3D
+  // ===== 1. Gráfico 3D =====
   const plot3d = useMemo(() => {
-    if (filteredVdis.length === 0) return null;
-    return {
-      data: [{
-        type: "scatter3d" as any, mode: "markers",
-        x: filteredVdis.map(v => v.A), y: filteredVdis.map(v => v.S), z: filteredVdis.map(v => v.E),
-        text: filteredVdis.map(v => `${v.nome}<br>|VDI|=${v.modulo.toFixed(3)}`),
-        marker: { size: 6, color: filteredVdis.map(v => v.modulo), colorscale: "Viridis", colorbar: { title: { text: "|VDI|" } } },
-      }],
-      layout: {
-        autosize: true, height: 500, margin: { l: 0, r: 0, t: 30, b: 0 },
-        scene: {
-          xaxis: { title: { text: "Acadêmico (A)" }, range: [0, 1] },
-          yaxis: { title: { text: "Social (S)" }, range: [0, 1] },
-          zaxis: { title: { text: "Socioemocional (E)" }, range: [0, 1] },
-        },
-        paper_bgcolor: "transparent",
-      },
-    };
-  }, [filteredVdis]);
-
-  // 3. Aluno × Turma — X=|VDI| do aluno, Y=IEDE da turma (linha reta, igual modelo de Turmas)
-  const turmaPlot = useMemo(() => {
-    if (selectedClass === "all" || filteredVdis.length === 0) return null;
-    const iedeTurma = calcIEDE(filteredVdis);
-    const vdiMedio = filteredVdis.reduce((s, v) => s + v.modulo, 0) / filteredVdis.length;
-    const desvios = filteredVdis.map(v => Math.abs(v.modulo - vdiMedio));
-    const desvMax = Math.max(...desvios, 0.0001);
-    const colorRange = Math.max(0.1, vdiMedio);
-    return {
-      data: [{
-        type: "scatter" as any, mode: "markers+text",
-        x: filteredVdis.map(v => v.modulo),
-        y: filteredVdis.map(() => iedeTurma),
-        text: filteredVdis.map(v => v.nome), textposition: "top center", textfont: { size: 10 },
-        hovertemplate: filteredVdis.map(v =>
-          `<b>${v.nome}</b><br>|VDI|: ${v.modulo.toFixed(3)}<br>A: ${v.A.toFixed(3)}<br>S: ${v.S.toFixed(3)}<br>E: ${v.E.toFixed(3)}<br>IEDE turma: ${iedeTurma.toFixed(3)}<extra></extra>`
-        ),
-        marker: {
-          size: filteredVdis.map((_, i) => 12 + (desvios[i] / desvMax) * 28),
-          color: filteredVdis.map(v => v.modulo - vdiMedio),
-          colorscale: "RdYlGn",
-          cmin: -colorRange, cmax: colorRange, cmid: 0,
-          line: { color: "rgba(0,0,0,0.4)", width: 1 },
-          colorbar: { title: { text: "|VDI| − média" }, thickness: 12 },
-        },
-        name: "Alunos",
-      }],
-      layout: ({
-        autosize: true, height: 520,
-        xaxis: { title: { text: "|VDI| do aluno" }, range: [0, VDI_MAX], zeroline: false },
-        yaxis: { title: { text: "IEDE da turma" }, range: [0, VDI_MAX], zeroline: false },
-        shapes: [
-          { type: "line", x0: vdiMedio, x1: vdiMedio, y0: 0, y1: VDI_MAX, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
-          { type: "line", x0: 0, x1: VDI_MAX, y0: iedeTurma, y1: iedeTurma, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
-        ],
-        annotations: [
-          { x: vdiMedio, y: VDI_MAX, text: `|VDI| médio = ${vdiMedio.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, yanchor: "bottom" },
-          { x: VDI_MAX, y: iedeTurma, text: `IEDE turma = ${iedeTurma.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, xanchor: "right", yanchor: "bottom" },
-        ],
-        paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-        margin: { l: 60, r: 30, t: 30, b: 60 },
-        showlegend: false,
-      } as any),
-    };
-  }, [filteredVdis, selectedClass]);
-
-  // 4. Aluno × Escola — X=|VDI| do aluno, Y=IEDE da escola (linha reta), com destaque da turma
-  const escolaPlot = useMemo(() => {
     if (vdis.length === 0) return null;
-    const isHighlighted = (v: VDIExtra) => selectedClass !== "all" && v.classId === selectedClass;
-    const vdiMedio = vdis.reduce((s, v) => s + v.modulo, 0) / vdis.length;
-    const colorRange = Math.max(0.1, vdiMedio);
-    const desvios = vdis.map(v => Math.abs(v.modulo - vdiMedio));
-    const desvMax = Math.max(...desvios, 0.0001);
+    const isSel = (v: VDIExtra) => selectedClass === "all" || v.classId === selectedClass;
+    const sel = vdis.filter(isSel);
+    const others = vdis.filter(v => !isSel(v));
 
-    const others = vdis.filter(v => !isHighlighted(v));
-    const highlighted = vdis.filter(isHighlighted);
-    const otherIdx = vdis.map((v, i) => isHighlighted(v) ? -1 : i).filter(i => i >= 0);
-    const highIdx = vdis.map((v, i) => isHighlighted(v) ? i : -1).filter(i => i >= 0);
+    const traces: any[] = [];
 
-    const traces: any[] = [{
-      type: "scatter", mode: "markers", name: "Outros alunos",
-      x: others.map(v => v.modulo),
-      y: others.map(() => iedeEscola),
-      text: others.map(v => `${v.nome} (${v.serie ?? ""} ${v.turma ?? ""})`),
-      hovertemplate: others.map(v =>
-        `<b>${v.nome}</b><br>${v.serie ?? ""} ${v.turma ?? ""}<br>|VDI|: ${v.modulo.toFixed(3)}<br>IEDE escola: ${iedeEscola.toFixed(3)}<extra></extra>`
-      ),
-      marker: {
-        size: otherIdx.map(i => 8 + (desvios[i] / desvMax) * 18),
-        color: others.map(v => v.modulo - vdiMedio),
-        colorscale: "RdYlGn",
-        cmin: -colorRange, cmax: colorRange, cmid: 0,
-        opacity: highlighted.length ? 0.45 : 0.85,
-        line: { color: "rgba(0,0,0,0.3)", width: 0.5 },
-        colorbar: { title: { text: "|VDI| − média" }, thickness: 12 },
-      },
-    }];
-
-    if (highlighted.length) {
+    if (others.length) {
       traces.push({
-        type: "scatter", mode: "markers+text", name: "Turma selecionada",
-        x: highlighted.map(v => v.modulo),
-        y: highlighted.map(() => iedeEscola),
-        text: highlighted.map(v => v.nome), textposition: "top center", textfont: { size: 10 },
-        hovertemplate: highlighted.map(v =>
-          `<b>${v.nome}</b><br>|VDI|: ${v.modulo.toFixed(3)}<br>IEDE escola: ${iedeEscola.toFixed(3)}<extra></extra>`
-        ),
-        marker: {
-          size: highIdx.map(i => 12 + (desvios[i] / desvMax) * 22),
-          color: highlighted.map(v => v.modulo - vdiMedio),
-          colorscale: "RdYlGn",
-          cmin: -colorRange, cmax: colorRange, cmid: 0,
-          showscale: false,
-          line: { color: "white", width: 2 },
-        },
+        type: "scatter3d", mode: "markers",
+        name: "Outros alunos",
+        x: others.map(v => v.A), y: others.map(v => v.S), z: others.map(v => v.E),
+        text: others.map(v => `${v.nome}<br>${v.serie ?? ""} ${v.turma ?? ""}`),
+        hovertemplate: "%{text}<br>A=%{x:.2f}<br>S=%{y:.2f}<br>E=%{z:.2f}<extra></extra>",
+        marker: { size: 4, color: COLORS.muted, opacity: 0.35 },
+      });
+    }
+
+    traces.push({
+      type: "scatter3d", mode: "markers",
+      name: selectedClass === "all" ? "Alunos" : "Turma selecionada",
+      x: sel.map(v => v.A), y: sel.map(v => v.S), z: sel.map(v => v.E),
+      text: sel.map(v => `${v.nome}<br>|VDI|=${v.modulo.toFixed(3)}`),
+      hovertemplate: "%{text}<br>A=%{x:.2f}<br>S=%{y:.2f}<br>E=%{z:.2f}<extra></extra>",
+      marker: { size: 5, color: COLORS.primary, opacity: 0.85 },
+    });
+
+    // Centroide da escola
+    traces.push({
+      type: "scatter3d", mode: "markers+text",
+      name: "Centroide escola",
+      x: [centroidEscola.A], y: [centroidEscola.S], z: [centroidEscola.E],
+      text: ["◆ Escola"], textposition: "top center",
+      hovertemplate: `Centroide escola<br>A=${centroidEscola.A.toFixed(3)}<br>S=${centroidEscola.S.toFixed(3)}<br>E=${centroidEscola.E.toFixed(3)}<extra></extra>`,
+      marker: { size: 10, color: COLORS.centroidEscola, symbol: "diamond", line: { color: "white", width: 2 } },
+    });
+
+    // Centroide da turma selecionada
+    if (centroidTurmaSel) {
+      traces.push({
+        type: "scatter3d", mode: "markers+text",
+        name: "Centroide turma",
+        x: [centroidTurmaSel.A], y: [centroidTurmaSel.S], z: [centroidTurmaSel.E],
+        text: ["◆ Turma"], textposition: "top center",
+        hovertemplate: `Centroide turma<br>A=${centroidTurmaSel.A.toFixed(3)}<br>S=${centroidTurmaSel.S.toFixed(3)}<br>E=${centroidTurmaSel.E.toFixed(3)}<extra></extra>`,
+        marker: { size: 10, color: COLORS.centroidTurma, symbol: "diamond", line: { color: "white", width: 2 } },
       });
     }
 
     return {
       data: traces,
-      layout: ({
-        autosize: true, height: 520,
-        xaxis: { title: { text: "|VDI| do aluno" }, range: [0, VDI_MAX], zeroline: false },
-        yaxis: { title: { text: "IEDE da escola" }, range: [0, VDI_MAX], zeroline: false },
+      layout: {
+        ...baseLayout,
+        autosize: true, height: 560, margin: { l: 0, r: 0, t: 30, b: 0 },
+        scene: {
+          xaxis: { title: { text: "Acadêmico (A)" }, range: [0, 1] },
+          yaxis: { title: { text: "Social (S)" }, range: [0, 1] },
+          zaxis: { title: { text: "Socioemocional (E)" }, range: [0, 1] },
+          bgcolor: "transparent",
+        },
+        legend: { orientation: "h", y: -0.05 },
+      } as any,
+    };
+  }, [vdis, selectedClass, centroidEscola, centroidTurmaSel]);
+
+  // ===== 2. Aluno × Turma — X = dist ao centroide da turma, Y = |VDI| =====
+  const alunoTurmaPlot = useMemo(() => {
+    if (selectedClass === "all" || filteredVdis.length === 0 || !centroidTurmaSel) return null;
+    const dists = filteredVdis.map(v => dist(v, centroidTurmaSel));
+    const distMedia = dists.reduce((s, d) => s + d, 0) / dists.length;
+    const distStd = Math.sqrt(dists.reduce((s, d) => s + (d - distMedia) ** 2, 0) / dists.length);
+    const limiar = distMedia + distStd;
+    const iedeMedio = filteredVdis.reduce((s, v) => s + v.modulo, 0) / filteredVdis.length;
+    const xMax = Math.max(...dists, 0.5) * 1.15;
+
+    const cores = dists.map(d => d > limiar ? COLORS.bad : COLORS.primary);
+
+    return {
+      data: [{
+        type: "scatter", mode: "markers+text",
+        x: dists, y: filteredVdis.map(v => v.modulo),
+        text: filteredVdis.map((v, i) => dists[i] > limiar ? v.nome : ""),
+        textposition: "top center", textfont: { size: 10 },
+        hovertemplate: filteredVdis.map((v, i) =>
+          `<b>${v.nome}</b><br>Distância à turma: ${dists[i].toFixed(3)}<br>|VDI|: ${v.modulo.toFixed(3)}<extra></extra>`
+        ),
+        marker: { size: 10, color: cores, opacity: 0.8, line: { color: "white", width: 1 } },
+        name: "Alunos",
+      }],
+      layout: {
+        ...baseLayout,
+        autosize: true, height: 480,
+        xaxis: { title: { text: "Distância ao centroide da turma" }, range: [0, xMax], zeroline: false, gridcolor: "oklch(0.92 0.01 250)" },
+        yaxis: { title: { text: "|VDI| do aluno" }, range: [0, VDI_MAX], zeroline: false, gridcolor: "oklch(0.92 0.01 250)" },
         shapes: [
-          { type: "line", x0: vdiMedio, x1: vdiMedio, y0: 0, y1: VDI_MAX, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
-          { type: "line", x0: 0, x1: VDI_MAX, y0: iedeEscola, y1: iedeEscola, line: { color: "rgba(100,100,100,0.5)", dash: "dash", width: 1 } },
+          { type: "line", x0: distMedia, x1: distMedia, y0: 0, y1: VDI_MAX, line: { color: COLORS.muted, dash: "dash", width: 1 } },
+          { type: "line", x0: 0, x1: xMax, y0: iedeMedio, y1: iedeMedio, line: { color: COLORS.muted, dash: "dot", width: 1 } },
+          { type: "line", x0: limiar, x1: limiar, y0: 0, y1: VDI_MAX, line: { color: COLORS.bad, dash: "dot", width: 1 } },
         ],
         annotations: [
-          { x: vdiMedio, y: VDI_MAX, text: `|VDI| médio = ${vdiMedio.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, yanchor: "bottom" },
-          { x: VDI_MAX, y: iedeEscola, text: `IEDE escola = ${iedeEscola.toFixed(3)}`, showarrow: false, font: { size: 9, color: "rgba(80,80,80,0.9)" }, xanchor: "right", yanchor: "bottom" },
+          { x: distMedia, y: VDI_MAX, text: `dist. média = ${distMedia.toFixed(3)}`, showarrow: false, font: { size: 9 }, yanchor: "bottom" },
+          { x: xMax, y: iedeMedio, text: `IEDE turma = ${iedeMedio.toFixed(3)}`, showarrow: false, font: { size: 9 }, xanchor: "right", yanchor: "bottom" },
+          { x: limiar, y: 0, text: "outliers →", showarrow: false, font: { size: 9, color: COLORS.bad }, xanchor: "left", yanchor: "bottom" },
         ],
-        paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-        margin: { l: 60, r: 30, t: 30, b: 60 },
-        showlegend: highlighted.length > 0,
-      } as any),
+        showlegend: false,
+      } as any,
     };
-  }, [vdis, selectedClass, iedeEscola]);
+  }, [filteredVdis, selectedClass, centroidTurmaSel]);
 
-  // 5. Pearson (regressão linear)
-  const pearsonPlot = useMemo(() => {
-    if (filteredVdis.length === 0) return null;
-    const xVals = filteredVdis.map(v => v.S);
-    const yVals = filteredVdis.map(v => v.A);
-    const n = xVals.length;
-    const meanX = xVals.reduce((a, b) => a + b, 0) / n;
-    const meanY = yVals.reduce((a, b) => a + b, 0) / n;
-    let num = 0, den = 0;
-    for (let i = 0; i < n; i++) { num += (xVals[i] - meanX) * (yVals[i] - meanY); den += (xVals[i] - meanX) ** 2; }
-    const slope = den ? num / den : 0;
-    const intercept = meanY - slope * meanX;
-    const xLine = [Math.min(...xVals), Math.max(...xVals)];
-    const yLine = xLine.map(x => slope * x + intercept);
+  // ===== 3. Aluno × Escola — X = dist turma, Y = dist escola (quadrantes) =====
+  const alunoEscolaPlot = useMemo(() => {
+    if (selectedClass === "all" || filteredVdis.length === 0 || !centroidTurmaSel) return null;
+    const dx = filteredVdis.map(v => dist(v, centroidTurmaSel));
+    const dy = filteredVdis.map(v => dist(v, centroidEscola));
+    const xMed = dx.reduce((s, d) => s + d, 0) / dx.length;
+    const yMed = dy.reduce((s, d) => s + d, 0) / dy.length;
+    const xMax = Math.max(...dx, 0.5) * 1.2;
+    const yMax = Math.max(...dy, 0.5) * 1.2;
+
     return {
-      data: [
-        { type: "scatter" as any, mode: "markers", x: xVals, y: yVals, text: filteredVdis.map(v => v.nome), marker: { size: 8, color: "oklch(0.35 0.12 250)" }, name: "Alunos" },
-        { type: "scatter" as any, mode: "lines", x: xLine, y: yLine, line: { color: "oklch(0.65 0.2 30)", width: 2 }, name: `Tendência (r=${pearsonSA.toFixed(3)})` },
-      ],
+      data: [{
+        type: "scatter", mode: "markers",
+        x: dx, y: dy,
+        text: filteredVdis.map(v => v.nome),
+        hovertemplate: filteredVdis.map((v, i) =>
+          `<b>${v.nome}</b><br>Dist. turma: ${dx[i].toFixed(3)}<br>Dist. escola: ${dy[i].toFixed(3)}<extra></extra>`
+        ),
+        marker: { size: 10, color: COLORS.primary, opacity: 0.75, line: { color: "white", width: 1 } },
+      }],
       layout: {
-        autosize: true, height: 400,
-        xaxis: { title: { text: "Social (S)" }, range: [0, 1] },
-        yaxis: { title: { text: "Acadêmico (A)" }, range: [0, 1] },
-        paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-        margin: { l: 50, r: 20, t: 30, b: 50 },
-      },
+        ...baseLayout,
+        autosize: true, height: 480,
+        xaxis: { title: { text: "Distância à turma →" }, range: [0, xMax], zeroline: false, gridcolor: "oklch(0.92 0.01 250)" },
+        yaxis: { title: { text: "Distância à escola →" }, range: [0, yMax], zeroline: false, gridcolor: "oklch(0.92 0.01 250)" },
+        shapes: [
+          { type: "line", x0: xMed, x1: xMed, y0: 0, y1: yMax, line: { color: COLORS.muted, dash: "dash", width: 1 } },
+          { type: "line", x0: 0, x1: xMax, y0: yMed, y1: yMed, line: { color: COLORS.muted, dash: "dash", width: 1 } },
+        ],
+        annotations: [
+          { x: xMax * 0.97, y: yMax * 0.97, text: "Desalinhado<br>com turma e escola", showarrow: false, font: { size: 10, color: COLORS.bad }, xanchor: "right", yanchor: "top" },
+          { x: 0.03, y: yMax * 0.97, text: "Pertence à turma<br>distante da escola", showarrow: false, font: { size: 10, color: COLORS.warn }, xanchor: "left", yanchor: "top" },
+          { x: xMax * 0.97, y: 0.03, text: "Próximo da escola<br>distante da turma", showarrow: false, font: { size: 10, color: COLORS.warn }, xanchor: "right", yanchor: "bottom" },
+          { x: 0.03, y: 0.03, text: "Pertencimento pleno<br>(turma + escola)", showarrow: false, font: { size: 10, color: COLORS.ok }, xanchor: "left", yanchor: "bottom" },
+        ],
+        showlegend: false,
+      } as any,
     };
-  }, [filteredVdis, pearsonSA]);
+  }, [filteredVdis, selectedClass, centroidTurmaSel, centroidEscola]);
+
+  // ===== 4. Comparação entre turmas =====
+  const turmasComparePlot = useMemo(() => {
+    if (centroidesTurmas.length === 0) return null;
+    const sigmas = centroidesTurmas.map(t => t.sigma);
+    const sigmaMax = Math.max(...sigmas, 0.0001);
+    return {
+      data: [{
+        type: "scatter", mode: "markers+text",
+        x: centroidesTurmas.map(t => t.distEscola),
+        y: centroidesTurmas.map(t => t.iede),
+        text: centroidesTurmas.map(t => t.nome),
+        textposition: "top center", textfont: { size: 10 },
+        hovertemplate: centroidesTurmas.map(t =>
+          `<b>${t.nome}</b><br>IEDE: ${t.iede.toFixed(3)}<br>σ: ${t.sigma.toFixed(3)}<br>Dist. à escola: ${t.distEscola.toFixed(3)}<br>n: ${t.n}<extra></extra>`
+        ),
+        marker: {
+          size: centroidesTurmas.map(t => 14 + (t.sigma / sigmaMax) * 30),
+          color: centroidesTurmas.map(t => t.iede),
+          colorscale: [[0, COLORS.bad], [0.5, COLORS.warn], [1, COLORS.ok]],
+          cmin: 0, cmax: VDI_MAX,
+          line: { color: "white", width: 1.5 },
+          colorbar: { title: { text: "IEDE", side: "right" }, thickness: 10, len: 0.7 },
+        },
+      }],
+      layout: {
+        ...baseLayout,
+        autosize: true, height: 480,
+        xaxis: { title: { text: "Distância do centroide da turma à escola" }, zeroline: false, gridcolor: "oklch(0.92 0.01 250)" },
+        yaxis: { title: { text: "IEDE da turma" }, range: [0, VDI_MAX], zeroline: false, gridcolor: "oklch(0.92 0.01 250)" },
+        showlegend: false,
+      } as any,
+    };
+  }, [centroidesTurmas]);
+
+  // ===== 5. Heatmap (turmas × A,S,E,IEDE,σ,dist) =====
+  const heatmapPlot = useMemo(() => {
+    if (centroidesTurmas.length === 0) return null;
+    const cols = ["A", "S", "E", "IEDE", "σ", "Dist. escola"];
+    const z = centroidesTurmas.map(t => [
+      t.centroide.A, t.centroide.S, t.centroide.E, t.iede, t.sigma, t.distEscola
+    ]);
+    return {
+      data: [{
+        type: "heatmap",
+        z, x: cols, y: centroidesTurmas.map(t => t.nome),
+        colorscale: [
+          [0, "oklch(0.95 0.02 250)"],
+          [0.5, "oklch(0.65 0.12 250)"],
+          [1, "oklch(0.35 0.18 250)"],
+        ],
+        hovertemplate: "Turma: %{y}<br>%{x}: %{z:.3f}<extra></extra>",
+        colorbar: { thickness: 10, len: 0.8 },
+      }],
+      layout: {
+        ...baseLayout,
+        autosize: true, height: Math.max(280, 60 + centroidesTurmas.length * 38),
+        xaxis: { side: "top" },
+        yaxis: { automargin: true },
+        margin: { l: 100, r: 20, t: 50, b: 30 },
+      } as any,
+    };
+  }, [centroidesTurmas]);
+
+  // ===== 6. Boxplot — |VDI| por turma =====
+  const boxplotPlot = useMemo(() => {
+    if (centroidesTurmas.length === 0) return null;
+    const traces = centroidesTurmas.map(t => {
+      const alunos = vdis.filter(v => v.classId === t.classId);
+      return {
+        type: "box",
+        name: t.nome,
+        y: alunos.map(v => v.modulo),
+        boxpoints: "outliers" as const,
+        marker: { color: COLORS.primary, size: 4 },
+        line: { color: COLORS.primary },
+        fillcolor: "oklch(0.45 0.15 250 / 0.15)",
+      };
+    });
+    return {
+      data: traces,
+      layout: {
+        ...baseLayout,
+        autosize: true, height: 460,
+        yaxis: { title: { text: "|VDI|" }, range: [0, VDI_MAX], gridcolor: "oklch(0.92 0.01 250)" },
+        xaxis: { title: { text: "Turma" } },
+        showlegend: false,
+      } as any,
+    };
+  }, [centroidesTurmas, vdis]);
 
   if (loading) {
     return <div className="min-h-screen bg-background"><Header /><div className="flex items-center justify-center py-20 text-muted-foreground">Carregando dados...</div></div>;
@@ -377,109 +426,100 @@ function DashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
           <KPICard icon={<Target className="h-5 w-5" />} label="IEDE" value={iede.toFixed(3)} desc={`Classificação: ${classificar(iede)}`} />
           <KPICard icon={<Activity className="h-5 w-5" />} label="Desvio Padrão (σ)" value={desvio.toFixed(3)} desc="Desigualdade interna" />
-          <KPICard icon={<TrendingUp className="h-5 w-5" />} label="Pearson (r)" value={pearsonSA.toFixed(3)} desc="Correlação Social × Acadêmico" />
+          <KPICard icon={<TrendingUp className="h-5 w-5" />} label="Pearson (r)" value={pearsonSA.toFixed(3)} desc="Social × Acadêmico" />
           <KPICard icon={<BarChart3 className="h-5 w-5" />} label="Total Alunos" value={filteredVdis.length.toString()} desc={filtroAtivo ? "Na turma" : "Na escola"} />
         </div>
 
-        <Tabs defaultValue="turmas" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="turmas">Turmas (VDI × IEDE)</TabsTrigger>
+        <Tabs defaultValue="3d" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="3d">3D (A,S,E)</TabsTrigger>
-            <TabsTrigger value="turma">Aluno × Turma</TabsTrigger>
-            <TabsTrigger value="escola">Aluno × Escola</TabsTrigger>
-            <TabsTrigger value="pearson">Pearson</TabsTrigger>
+            <TabsTrigger value="aluno-turma">Aluno × Turma</TabsTrigger>
+            <TabsTrigger value="aluno-escola">Aluno × Escola</TabsTrigger>
+            <TabsTrigger value="turmas">Turmas</TabsTrigger>
+            <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
+            <TabsTrigger value="boxplot">Boxplot</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="turmas">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-heading">Dispersão de Turmas — |VDI| médio × IEDE</CardTitle>
-                <CardDescription>
-                  Cada ponto = 1 turma. Tamanho = σ (desigualdade interna). Cor = posição vs IEDE médio da escola (verde acima, vermelho abaixo). Linhas tracejadas = médias da escola. Ignora o filtro de turma.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Suspense fallback={<Loading />}>
-                  {turmasPlot ? (
-                    <Plot data={turmasPlot.data} layout={turmasPlot.layout} config={{ responsive: true }} style={{ width: "100%", height: "520px" }} />
-                  ) : <NoData />}
-                </Suspense>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="3d">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-heading">Dispersão 3D — Vetor Democrático Individual</CardTitle>
-                <CardDescription>Cada ponto = aluno {filtroAtivo ? "da turma selecionada" : "da escola"} no espaço (A, S, E)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Suspense fallback={<Loading />}>
-                  {plot3d ? (
-                    <Plot data={plot3d.data} layout={plot3d.layout} config={{ responsive: true }} style={{ width: "100%", height: "500px" }} />
-                  ) : <NoData />}
-                </Suspense>
-              </CardContent>
-            </Card>
+            <ChartCard
+              title="Dispersão 3D — Espaço (A, S, E)"
+              desc="Cada ponto = aluno. Losangos = centroides da turma e da escola. Selecione uma turma para destacá-la."
+            >
+              {plot3d ? <Plot data={plot3d.data} layout={plot3d.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "560px" }} /> : <NoData />}
+            </ChartCard>
           </TabsContent>
 
-          <TabsContent value="turma">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-heading">Dispersão — Aluno × Turma</CardTitle>
-                <CardDescription>Posição dos alunos da turma selecionada (Social × Socioemocional)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Suspense fallback={<Loading />}>
-                  {!filtroAtivo ? (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm text-center px-6">
-                      Selecione uma turma no filtro acima para ver a dispersão dos seus alunos.
-                    </div>
-                  ) : turmaPlot ? (
-                    <Plot data={turmaPlot.data} layout={turmaPlot.layout} config={{ responsive: true }} style={{ width: "100%", height: "450px" }} />
-                  ) : <NoData />}
-                </Suspense>
-              </CardContent>
-            </Card>
+          <TabsContent value="aluno-turma">
+            <ChartCard
+              title="Aluno × Turma"
+              desc="X = distância ao centroide da turma. Y = |VDI| do aluno. Linhas pontilhadas = média da turma. Pontos vermelhos = outliers (acima de média + σ)."
+            >
+              {!filtroAtivo ? <SelectClassMsg /> : alunoTurmaPlot ? (
+                <Plot data={alunoTurmaPlot.data} layout={alunoTurmaPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
+              ) : <NoData />}
+            </ChartCard>
           </TabsContent>
 
-          <TabsContent value="escola">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-heading">Dispersão — Aluno × Escola</CardTitle>
-                <CardDescription>
-                  Todos os alunos da escola. {filtroAtivo ? "Alunos da turma selecionada destacados em laranja." : "Selecione uma turma para destacá-la no contexto da escola."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Suspense fallback={<Loading />}>
-                  {escolaPlot ? (
-                    <Plot data={escolaPlot.data} layout={escolaPlot.layout} config={{ responsive: true }} style={{ width: "100%", height: "450px" }} />
-                  ) : <NoData />}
-                </Suspense>
-              </CardContent>
-            </Card>
+          <TabsContent value="aluno-escola">
+            <ChartCard
+              title="Aluno × Escola — Pertencimento"
+              desc="X = dist. à turma · Y = dist. à escola. Quadrantes: pertencimento pleno (canto inferior-esquerdo) vs. desalinhamento (canto superior-direito)."
+            >
+              {!filtroAtivo ? <SelectClassMsg /> : alunoEscolaPlot ? (
+                <Plot data={alunoEscolaPlot.data} layout={alunoEscolaPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
+              ) : <NoData />}
+            </ChartCard>
           </TabsContent>
 
-          <TabsContent value="pearson">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-heading">Correlação de Pearson — Social × Acadêmico</CardTitle>
-                <CardDescription>r = {pearsonSA.toFixed(4)} — {pearsonSA > 0.5 ? "Correlação positiva forte" : pearsonSA > 0.3 ? "Correlação positiva moderada" : pearsonSA > 0 ? "Correlação positiva fraca" : pearsonSA > -0.3 ? "Correlação negativa fraca" : "Correlação negativa"}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Suspense fallback={<Loading />}>
-                  {pearsonPlot ? (
-                    <Plot data={pearsonPlot.data} layout={pearsonPlot.layout} config={{ responsive: true }} style={{ width: "100%", height: "400px" }} />
-                  ) : <NoData />}
-                </Suspense>
-              </CardContent>
-            </Card>
+          <TabsContent value="turmas">
+            <ChartCard
+              title="Comparação entre turmas"
+              desc="X = distância do centroide da turma à escola. Y = IEDE. Tamanho = σ (dispersão interna). Cor = IEDE."
+            >
+              {turmasComparePlot ? (
+                <Plot data={turmasComparePlot.data} layout={turmasComparePlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
+              ) : <NoData />}
+            </ChartCard>
+          </TabsContent>
+
+          <TabsContent value="heatmap">
+            <ChartCard
+              title="Heatmap — Turmas × Indicadores"
+              desc="Padrões coletivos em cada eixo. Tons mais escuros = valores mais altos."
+            >
+              {heatmapPlot ? (
+                <Plot data={heatmapPlot.data} layout={heatmapPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%" }} />
+              ) : <NoData />}
+            </ChartCard>
+          </TabsContent>
+
+          <TabsContent value="boxplot">
+            <ChartCard
+              title="Boxplot — |VDI| por turma"
+              desc="Mediana, quartis e outliers do |VDI| em cada turma."
+            >
+              {boxplotPlot ? (
+                <Plot data={boxplotPlot.data} layout={boxplotPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "460px" }} />
+              ) : <NoData />}
+            </ChartCard>
           </TabsContent>
         </Tabs>
       </div>
     </div>
+  );
+}
+
+function ChartCard({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-heading">{title}</CardTitle>
+        <CardDescription>{desc}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Suspense fallback={<Loading />}>{children}</Suspense>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -499,7 +539,11 @@ function KPICard({ icon, label, value, desc }: { icon: React.ReactNode; label: s
 }
 
 function NoData() {
-  return <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Sem dados suficientes. Cadastre turmas e colete respostas do formulário.</div>;
+  return <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Sem dados suficientes.</div>;
+}
+
+function SelectClassMsg() {
+  return <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm text-center px-6">Selecione uma turma no filtro acima.</div>;
 }
 
 function Loading() {
