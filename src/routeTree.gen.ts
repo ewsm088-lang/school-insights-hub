@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TurmasRouteImport } from './routes/turmas'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FormularioRouteImport } from './routes/formulario'
@@ -22,6 +23,11 @@ import { Route as AlunosIdRouteImport } from './routes/alunos.$id'
 const TurmasRoute = TurmasRouteImport.update({
   id: '/turmas',
   path: '/turmas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/relatorios': typeof RelatoriosRoute
   '/turmas': typeof TurmasRouteWithChildren
   '/alunos/$id': typeof AlunosIdRoute
   '/turmas/$id': typeof TurmasIdRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/relatorios': typeof RelatoriosRoute
   '/turmas': typeof TurmasRouteWithChildren
   '/alunos/$id': typeof AlunosIdRoute
   '/turmas/$id': typeof TurmasIdRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/relatorios': typeof RelatoriosRoute
   '/turmas': typeof TurmasRouteWithChildren
   '/alunos/$id': typeof AlunosIdRoute
   '/turmas/$id': typeof TurmasIdRoute
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/formulario'
     | '/login'
     | '/register'
+    | '/relatorios'
     | '/turmas'
     | '/alunos/$id'
     | '/turmas/$id'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/formulario'
     | '/login'
     | '/register'
+    | '/relatorios'
     | '/turmas'
     | '/alunos/$id'
     | '/turmas/$id'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/formulario'
     | '/login'
     | '/register'
+    | '/relatorios'
     | '/turmas'
     | '/alunos/$id'
     | '/turmas/$id'
@@ -142,6 +154,7 @@ export interface RootRouteChildren {
   FormularioRoute: typeof FormularioRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
+  RelatoriosRoute: typeof RelatoriosRoute
   TurmasRoute: typeof TurmasRouteWithChildren
   AlunosIdRoute: typeof AlunosIdRoute
 }
@@ -153,6 +166,13 @@ declare module '@tanstack/react-router' {
       path: '/turmas'
       fullPath: '/turmas'
       preLoaderRoute: typeof TurmasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -232,6 +252,7 @@ const rootRouteChildren: RootRouteChildren = {
   FormularioRoute: FormularioRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
+  RelatoriosRoute: RelatoriosRoute,
   TurmasRoute: TurmasRouteWithChildren,
   AlunosIdRoute: AlunosIdRoute,
 }
