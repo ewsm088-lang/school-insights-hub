@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Header } from "@/components/Header";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -400,14 +400,14 @@ function DashboardPage() {
   }, [centroidesTurmas, vdis]);
 
   if (loading) {
-    return <div className="min-h-screen bg-background"><Header /><div className="flex items-center justify-center py-20 text-muted-foreground">Carregando dados...</div></div>;
+    return <div className="min-h-screen bg-background"><div className="flex items-center justify-center py-20 text-muted-foreground">Carregando dados...</div></div>;
   }
 
   const filtroAtivo = selectedClass !== "all";
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div>
