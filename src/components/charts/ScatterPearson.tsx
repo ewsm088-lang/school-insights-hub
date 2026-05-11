@@ -1,4 +1,4 @@
-import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
+import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Cell } from "recharts";
 import { calcPearson, vdiColor } from "@/lib/descartes";
 import type { VDIExtra } from "@/lib/load-data";
 
@@ -39,8 +39,8 @@ export function ScatterPearson({ vdis }: { vdis: VDIExtra[] }) {
               );
             }}
           />
-          <Scatter data={data} fill="var(--primary)">
-            {data.map((d, i) => <circle key={i} fill={d.color} />)}
+          <Scatter data={data}>
+            {data.map((d, i) => <Cell key={i} fill={d.color} />)}
           </Scatter>
           <ReferenceLine
             segment={[{ x: lineData[0].x, y: lineData[0].y }, { x: lineData[1].x, y: lineData[1].y }]}
