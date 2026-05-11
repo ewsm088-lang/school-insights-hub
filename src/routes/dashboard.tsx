@@ -510,6 +510,65 @@ function DashboardPage() {
             </ChartCard>
           </TabsContent>
         </Tabs>
+
+        {/* Seções extras da spec */}
+        <div className="mt-10 space-y-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">G1 — Heatmap turmas × dimensões</CardTitle>
+                <CardDescription>Médias A / S / E por turma (verde / âmbar / vermelho)</CardDescription></CardHeader>
+              <CardContent><HeatmapDimensoes vdis={vdis as any} /></CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="font-heading">G2 — Equidade × Integração</CardTitle>
+                <CardDescription>IEDE × σ · tamanho = nº de alunos</CardDescription></CardHeader>
+              <CardContent><BubbleEquidade vdis={vdis as any} /></CardContent>
+            </Card>
+          </div>
+          <Card>
+            <CardHeader><CardTitle className="font-heading">G3 — Distribuição por turma</CardTitle>
+              <CardDescription>% de alunos vulnerável / parcial / integrado</CardDescription></CardHeader>
+            <CardContent><BarrasDistribuicao vdis={vdis as any} /></CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" /> Lista de atenção</CardTitle>
+              <CardDescription>Alunos com |VDI| &lt; 0.58 (vulneráveis)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const vuln = vdis.filter((v) => classifyVDI(v.modulo) === "vulneravel").sort((a,b) => a.modulo - b.modulo);
+                if (vuln.length === 0) return <p className="text-sm text-muted-foreground">Nenhum aluno em vulnerabilidade.</p>;
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="text-xs text-muted-foreground border-b">
+                        <th className="text-left p-2">Aluno</th><th className="p-2">Turma</th><th className="p-2">|VDI|</th><th className="p-2">A</th><th className="p-2">S</th><th className="p-2">E</th><th></th>
+                      </tr></thead>
+                      <tbody>
+                        {vuln.map((v) => (
+                          <tr key={v.studentId} className="border-b">
+                            <td className="p-2 font-medium">{v.nome}</td>
+                            <td className="p-2 text-xs text-muted-foreground">{v.serie} {v.turma}</td>
+                            <td className="p-2 text-center font-mono font-semibold" style={{ color: VDI_COLORS.vulneravel }}>{v.modulo.toFixed(3)}</td>
+                            <td className="p-2 text-center font-mono">{v.A.toFixed(2)}</td>
+                            <td className="p-2 text-center font-mono">{v.S.toFixed(2)}</td>
+                            <td className="p-2 text-center font-mono">{v.E.toFixed(2)}</td>
+                            <td className="p-2 text-right">
+                              <Button asChild size="sm" variant="ghost">
+                                <Link to="/alunos/$id" params={{ id: v.studentId }}>Ver <ExternalLink className="h-3 w-3 ml-1" /></Link>
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
