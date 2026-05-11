@@ -455,7 +455,7 @@ function DashboardPage() {
               desc="X = distância ao centroide da turma. Y = |VDI| do aluno. Linhas pontilhadas = média da turma. Pontos vermelhos = outliers (acima de média + σ)."
             >
               {!filtroAtivo ? <SelectClassMsg /> : alunoTurmaPlot ? (
-                <Plot data={alunoTurmaPlot.data} layout={alunoTurmaPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
+                <Plot data={alunoTurmaPlot.data as any} layout={alunoTurmaPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
               ) : <NoData />}
             </ChartCard>
           </TabsContent>
@@ -466,7 +466,7 @@ function DashboardPage() {
               desc="X = dist. à turma · Y = dist. à escola. Quadrantes: pertencimento pleno (canto inferior-esquerdo) vs. desalinhamento (canto superior-direito)."
             >
               {!filtroAtivo ? <SelectClassMsg /> : alunoEscolaPlot ? (
-                <Plot data={alunoEscolaPlot.data} layout={alunoEscolaPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
+                <Plot data={alunoEscolaPlot.data as any} layout={alunoEscolaPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
               ) : <NoData />}
             </ChartCard>
           </TabsContent>
@@ -477,7 +477,7 @@ function DashboardPage() {
               desc="X = distância do centroide da turma à escola. Y = IEDE. Tamanho = σ (dispersão interna). Cor = IEDE."
             >
               {turmasComparePlot ? (
-                <Plot data={turmasComparePlot.data} layout={turmasComparePlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
+                <Plot data={turmasComparePlot.data as any} layout={turmasComparePlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
               ) : <NoData />}
             </ChartCard>
           </TabsContent>
@@ -488,7 +488,7 @@ function DashboardPage() {
               desc="Padrões coletivos em cada eixo. Tons mais escuros = valores mais altos."
             >
               {heatmapPlot ? (
-                <Plot data={heatmapPlot.data} layout={heatmapPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%" }} />
+                <Plot data={heatmapPlot.data as any} layout={heatmapPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%" }} />
               ) : <NoData />}
             </ChartCard>
           </TabsContent>
@@ -499,7 +499,7 @@ function DashboardPage() {
               desc="Mediana, quartis e outliers do |VDI| em cada turma."
             >
               {boxplotPlot ? (
-                <Plot data={boxplotPlot.data} layout={boxplotPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "460px" }} />
+                <Plot data={boxplotPlot.data as any} layout={boxplotPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "460px" }} />
               ) : <NoData />}
             </ChartCard>
           </TabsContent>
