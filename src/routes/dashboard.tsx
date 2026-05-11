@@ -8,9 +8,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   calcVDI, calcIEDE, calcDesvioPadrao, calcPearson, classificar,
   VDI_MAX, type VDIResult, type StudentData, type SurveyRow,
+  classifyVDI, VDI_COLORS,
   SOCIAL_KEYS, SOCIO_KEYS,
 } from "@/lib/descartes";
-import { Activity, TrendingUp, BarChart3, Target } from "lucide-react";
+import { Activity, TrendingUp, BarChart3, Target, AlertTriangle, ExternalLink } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { HeatmapDimensoes } from "@/components/charts/HeatmapDimensoes";
+import { BubbleEquidade } from "@/components/charts/BubbleEquidade";
+import { BarrasDistribuicao } from "@/components/charts/BarrasDistribuicao";
 
 const Plot = lazy(() => import("react-plotly.js"));
 
