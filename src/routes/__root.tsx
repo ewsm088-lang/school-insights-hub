@@ -1,5 +1,8 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { Toaster } from "sonner";
+import { useRouterState } from "@tanstack/react-router";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 
 import appCss from "../styles.css?url";
 
@@ -68,10 +71,38 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+  // Rotas que não recebem sidebar (públicas e auth)
+  const noSidebar =
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname.startsWith("/formulario") ||
+    pathname.startsWith("/responder");
+
+  if (noSidebar) {
+    return (
+      <>
+        <Outlet />
+        <Toaster richColors position="top-right" />
+      </>
+    );
+  }
+
   return (
-    <>
-      <Outlet />
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col">
+          <header className="h-12 flex items-center border-b bg-background/60 backdrop-blur-md sticky top-0 z-40">
+            <SidebarTrigger className="ml-2" />
+          </header>
+          <main className="flex-1">
+            <Outlet />
+          </main>
+        </div>
+      </div>
       <Toaster richColors position="top-right" />
-    </>
+    </SidebarProvider>
   );
 }

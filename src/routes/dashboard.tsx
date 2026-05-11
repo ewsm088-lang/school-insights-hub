@@ -1,16 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Header } from "@/components/Header";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   calcVDI, calcIEDE, calcDesvioPadrao, calcPearson, classificar,
   VDI_MAX, type VDIResult, type StudentData, type SurveyRow,
+  classifyVDI, VDI_COLORS,
   SOCIAL_KEYS, SOCIO_KEYS,
 } from "@/lib/descartes";
-import { Activity, TrendingUp, BarChart3, Target } from "lucide-react";
+import { Activity, TrendingUp, BarChart3, Target, AlertTriangle, ExternalLink } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { HeatmapDimensoes } from "@/components/charts/HeatmapDimensoes";
+import { BubbleEquidade } from "@/components/charts/BubbleEquidade";
+import { BarrasDistribuicao } from "@/components/charts/BarrasDistribuicao";
 
 const Plot = lazy(() => import("react-plotly.js"));
 
@@ -400,14 +406,14 @@ function DashboardPage() {
   }, [centroidesTurmas, vdis]);
 
   if (loading) {
-    return <div className="min-h-screen bg-background"><Header /><div className="flex items-center justify-center py-20 text-muted-foreground">Carregando dados...</div></div>;
+    return <div className="min-h-screen bg-background"><div className="flex items-center justify-center py-20 text-muted-foreground">Carregando dados...</div></div>;
   }
 
   const filtroAtivo = selectedClass !== "all";
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div>
@@ -455,7 +461,7 @@ function DashboardPage() {
               desc="X = distância ao centroide da turma. Y = |VDI| do aluno. Linhas pontilhadas = média da turma. Pontos vermelhos = outliers (acima de média + σ)."
             >
               {!filtroAtivo ? <SelectClassMsg /> : alunoTurmaPlot ? (
-                <Plot data={alunoTurmaPlot.data} layout={alunoTurmaPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
+                <Plot data={alunoTurmaPlot.data as any} layout={alunoTurmaPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
               ) : <NoData />}
             </ChartCard>
           </TabsContent>
@@ -466,7 +472,7 @@ function DashboardPage() {
               desc="X = dist. à turma · Y = dist. à escola. Quadrantes: pertencimento pleno (canto inferior-esquerdo) vs. desalinhamento (canto superior-direito)."
             >
               {!filtroAtivo ? <SelectClassMsg /> : alunoEscolaPlot ? (
-                <Plot data={alunoEscolaPlot.data} layout={alunoEscolaPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
+                <Plot data={alunoEscolaPlot.data as any} layout={alunoEscolaPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
               ) : <NoData />}
             </ChartCard>
           </TabsContent>
@@ -477,7 +483,7 @@ function DashboardPage() {
               desc="X = distância do centroide da turma à escola. Y = IEDE. Tamanho = σ (dispersão interna). Cor = IEDE."
             >
               {turmasComparePlot ? (
-                <Plot data={turmasComparePlot.data} layout={turmasComparePlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
+                <Plot data={turmasComparePlot.data as any} layout={turmasComparePlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "480px" }} />
               ) : <NoData />}
             </ChartCard>
           </TabsContent>
@@ -488,7 +494,7 @@ function DashboardPage() {
               desc="Padrões coletivos em cada eixo. Tons mais escuros = valores mais altos."
             >
               {heatmapPlot ? (
-                <Plot data={heatmapPlot.data} layout={heatmapPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%" }} />
+                <Plot data={heatmapPlot.data as any} layout={heatmapPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%" }} />
               ) : <NoData />}
             </ChartCard>
           </TabsContent>
@@ -499,11 +505,70 @@ function DashboardPage() {
               desc="Mediana, quartis e outliers do |VDI| em cada turma."
             >
               {boxplotPlot ? (
-                <Plot data={boxplotPlot.data} layout={boxplotPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "460px" }} />
+                <Plot data={boxplotPlot.data as any} layout={boxplotPlot.layout} config={{ responsive: true, displaylogo: false }} style={{ width: "100%", height: "460px" }} />
               ) : <NoData />}
             </ChartCard>
           </TabsContent>
         </Tabs>
+
+        {/* Seções extras da spec */}
+        <div className="mt-10 space-y-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">G1 — Heatmap turmas × dimensões</CardTitle>
+                <CardDescription>Médias A / S / E por turma (verde / âmbar / vermelho)</CardDescription></CardHeader>
+              <CardContent><HeatmapDimensoes vdis={vdis as any} /></CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="font-heading">G2 — Equidade × Integração</CardTitle>
+                <CardDescription>IEDE × σ · tamanho = nº de alunos</CardDescription></CardHeader>
+              <CardContent><BubbleEquidade vdis={vdis as any} /></CardContent>
+            </Card>
+          </div>
+          <Card>
+            <CardHeader><CardTitle className="font-heading">G3 — Distribuição por turma</CardTitle>
+              <CardDescription>% de alunos vulnerável / parcial / integrado</CardDescription></CardHeader>
+            <CardContent><BarrasDistribuicao vdis={vdis as any} /></CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" /> Lista de atenção</CardTitle>
+              <CardDescription>Alunos com |VDI| &lt; 0.58 (vulneráveis)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const vuln = vdis.filter((v) => classifyVDI(v.modulo) === "vulneravel").sort((a,b) => a.modulo - b.modulo);
+                if (vuln.length === 0) return <p className="text-sm text-muted-foreground">Nenhum aluno em vulnerabilidade.</p>;
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="text-xs text-muted-foreground border-b">
+                        <th className="text-left p-2">Aluno</th><th className="p-2">Turma</th><th className="p-2">|VDI|</th><th className="p-2">A</th><th className="p-2">S</th><th className="p-2">E</th><th></th>
+                      </tr></thead>
+                      <tbody>
+                        {vuln.map((v) => (
+                          <tr key={v.studentId} className="border-b">
+                            <td className="p-2 font-medium">{v.nome}</td>
+                            <td className="p-2 text-xs text-muted-foreground">{v.serie} {v.turma}</td>
+                            <td className="p-2 text-center font-mono font-semibold" style={{ color: VDI_COLORS.vulneravel }}>{v.modulo.toFixed(3)}</td>
+                            <td className="p-2 text-center font-mono">{v.A.toFixed(2)}</td>
+                            <td className="p-2 text-center font-mono">{v.S.toFixed(2)}</td>
+                            <td className="p-2 text-center font-mono">{v.E.toFixed(2)}</td>
+                            <td className="p-2 text-right">
+                              <Button asChild size="sm" variant="ghost">
+                                <Link to="/alunos/$id" params={{ id: v.studentId }}>Ver <ExternalLink className="h-3 w-3 ml-1" /></Link>
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

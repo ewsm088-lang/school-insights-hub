@@ -9,13 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TurmasRouteImport } from './routes/turmas'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FormularioRouteImport } from './routes/formulario'
 import { Route as EscolaRouteImport } from './routes/escola'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TurmasIdRouteImport } from './routes/turmas.$id'
+import { Route as ResponderTokenRouteImport } from './routes/responder.$token'
+import { Route as AlunosIdRouteImport } from './routes/alunos.$id'
 
+const TurmasRoute = TurmasRouteImport.update({
+  id: '/turmas',
+  path: '/turmas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -46,6 +61,21 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TurmasIdRoute = TurmasIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TurmasRoute,
+} as any)
+const ResponderTokenRoute = ResponderTokenRouteImport.update({
+  id: '/responder/$token',
+  path: '/responder/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlunosIdRoute = AlunosIdRouteImport.update({
+  id: '/alunos/$id',
+  path: '/alunos/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +84,11 @@ export interface FileRoutesByFullPath {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/turmas': typeof TurmasRouteWithChildren
+  '/alunos/$id': typeof AlunosIdRoute
+  '/responder/$token': typeof ResponderTokenRoute
+  '/turmas/$id': typeof TurmasIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +97,11 @@ export interface FileRoutesByTo {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/turmas': typeof TurmasRouteWithChildren
+  '/alunos/$id': typeof AlunosIdRoute
+  '/responder/$token': typeof ResponderTokenRoute
+  '/turmas/$id': typeof TurmasIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +111,11 @@ export interface FileRoutesById {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/turmas': typeof TurmasRouteWithChildren
+  '/alunos/$id': typeof AlunosIdRoute
+  '/responder/$token': typeof ResponderTokenRoute
+  '/turmas/$id': typeof TurmasIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,8 +126,24 @@ export interface FileRouteTypes {
     | '/formulario'
     | '/login'
     | '/register'
+    | '/relatorios'
+    | '/turmas'
+    | '/alunos/$id'
+    | '/responder/$token'
+    | '/turmas/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/escola' | '/formulario' | '/login' | '/register'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/escola'
+    | '/formulario'
+    | '/login'
+    | '/register'
+    | '/relatorios'
+    | '/turmas'
+    | '/alunos/$id'
+    | '/responder/$token'
+    | '/turmas/$id'
   id:
     | '__root__'
     | '/'
@@ -91,6 +152,11 @@ export interface FileRouteTypes {
     | '/formulario'
     | '/login'
     | '/register'
+    | '/relatorios'
+    | '/turmas'
+    | '/alunos/$id'
+    | '/responder/$token'
+    | '/turmas/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -100,10 +166,28 @@ export interface RootRouteChildren {
   FormularioRoute: typeof FormularioRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
+  RelatoriosRoute: typeof RelatoriosRoute
+  TurmasRoute: typeof TurmasRouteWithChildren
+  AlunosIdRoute: typeof AlunosIdRoute
+  ResponderTokenRoute: typeof ResponderTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/turmas': {
+      id: '/turmas'
+      path: '/turmas'
+      fullPath: '/turmas'
+      preLoaderRoute: typeof TurmasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -146,8 +230,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/turmas/$id': {
+      id: '/turmas/$id'
+      path: '/$id'
+      fullPath: '/turmas/$id'
+      preLoaderRoute: typeof TurmasIdRouteImport
+      parentRoute: typeof TurmasRoute
+    }
+    '/responder/$token': {
+      id: '/responder/$token'
+      path: '/responder/$token'
+      fullPath: '/responder/$token'
+      preLoaderRoute: typeof ResponderTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alunos/$id': {
+      id: '/alunos/$id'
+      path: '/alunos/$id'
+      fullPath: '/alunos/$id'
+      preLoaderRoute: typeof AlunosIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
+
+interface TurmasRouteChildren {
+  TurmasIdRoute: typeof TurmasIdRoute
+}
+
+const TurmasRouteChildren: TurmasRouteChildren = {
+  TurmasIdRoute: TurmasIdRoute,
+}
+
+const TurmasRouteWithChildren =
+  TurmasRoute._addFileChildren(TurmasRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -156,6 +272,10 @@ const rootRouteChildren: RootRouteChildren = {
   FormularioRoute: FormularioRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
+  RelatoriosRoute: RelatoriosRoute,
+  TurmasRoute: TurmasRouteWithChildren,
+  AlunosIdRoute: AlunosIdRoute,
+  ResponderTokenRoute: ResponderTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

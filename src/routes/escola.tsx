@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Header } from "@/components/Header";
+
 import { toast } from "sonner";
 import { Plus, Trash2, Users, Pencil, Save, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
@@ -177,11 +177,11 @@ function EscolaPage() {
     return calcAcademico(nota, notaMin, notaMax).toFixed(4);
   }
 
-  if (loading) return <div className="min-h-screen bg-background"><Header /><div className="flex items-center justify-center py-20 text-muted-foreground">Carregando...</div></div>;
+  if (loading) return <div className="min-h-screen bg-background"><div className="flex items-center justify-center py-20 text-muted-foreground">Carregando...</div></div>;
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      
       <div className="mx-auto max-w-7xl px-4 py-8">
         <h1 className="font-heading text-3xl font-bold mb-6">{school?.nome || "Minha Escola"}</h1>
 

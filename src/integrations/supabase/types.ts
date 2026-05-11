@@ -111,6 +111,33 @@ export type Database = {
         }
         Relationships: []
       }
+      observacoes: {
+        Row: {
+          author_id: string
+          created_at: string
+          id: string
+          student_id: string
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          id?: string
+          student_id: string
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          id?: string
+          student_id?: string
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       schools: {
         Row: {
           cidade: string
