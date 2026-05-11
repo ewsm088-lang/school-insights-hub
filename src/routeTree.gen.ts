@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TurmasRouteImport } from './routes/turmas'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FormularioRouteImport } from './routes/formulario'
@@ -16,6 +17,11 @@ import { Route as EscolaRouteImport } from './routes/escola'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TurmasRoute = TurmasRouteImport.update({
+  id: '/turmas',
+  path: '/turmas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/turmas': typeof TurmasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/turmas': typeof TurmasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/turmas': typeof TurmasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,8 +90,16 @@ export interface FileRouteTypes {
     | '/formulario'
     | '/login'
     | '/register'
+    | '/turmas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/escola' | '/formulario' | '/login' | '/register'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/escola'
+    | '/formulario'
+    | '/login'
+    | '/register'
+    | '/turmas'
   id:
     | '__root__'
     | '/'
@@ -91,6 +108,7 @@ export interface FileRouteTypes {
     | '/formulario'
     | '/login'
     | '/register'
+    | '/turmas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -100,10 +118,18 @@ export interface RootRouteChildren {
   FormularioRoute: typeof FormularioRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
+  TurmasRoute: typeof TurmasRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/turmas': {
+      id: '/turmas'
+      path: '/turmas'
+      fullPath: '/turmas'
+      preLoaderRoute: typeof TurmasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -156,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   FormularioRoute: FormularioRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
+  TurmasRoute: TurmasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
