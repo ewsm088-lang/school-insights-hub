@@ -184,3 +184,59 @@ export function calcTurmaStats(
 /** Limite teórico de |VDI| = √3 (quando A=S=E=1) */
 export const VDI_MAX = Math.sqrt(3);
 
+// Cores semânticas da spec
+export const VDI_COLORS = {
+  vulneravel: "#EF4444",
+  parcial: "#F59E0B",
+  integrado: "#22C55E",
+} as const;
+
+/**
+ * Classificação de aluno por |VDI| segundo a spec
+ *   < 0.58 → vulnerável
+ *   < 1.15 → parcial
+ *   ≥ 1.15 → integrado
+ */
+export function classifyVDI(modulo: number): "vulneravel" | "parcial" | "integrado" {
+  if (modulo < 0.58) return "vulneravel";
+  if (modulo < 1.15) return "parcial";
+  return "integrado";
+}
+
+export function vdiColor(modulo: number): string {
+  return VDI_COLORS[classifyVDI(modulo)];
+}
+
+/**
+ * 6 subdimensões da spec (radar). Cada grupo agrega 6-8 itens dos 40 Likert
+ * em uma média normalizada 0-1.
+ */
+export const SUBDIMENSOES = [
+  { key: "participacao", label: "Participação", keys: ["s01","s02","s03","s04","s05","s06","s07"] },
+  { key: "respeito",     label: "Respeito",     keys: ["s08","s09","s10","s11","s12","s13","s14"] },
+  { key: "colaboracao",  label: "Colaboração",  keys: ["s15","s16","s17","s18","s19","s20"] },
+  { key: "autogestao",   label: "Autogestão",   keys: ["e01","e02","e03","e04","e05","e06","e07"] },
+  { key: "empatia",      label: "Empatia",      keys: ["e08","e09","e10","e11","e12","e13","e14"] },
+  { key: "resolucao",    label: "Resolução",    keys: ["e15","e16","e17","e18","e19","e20"] },
+] as const;
+
+export function calcSubdimensoes(survey: SurveyRow): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const sd of SUBDIMENSOES) {
+    const sum = sd.keys.reduce((a, k) => a + (survey[k as keyof SurveyRow] || 3), 0);
+    const media = sum / sd.keys.length;
+    out[sd.key] = (media - 1) / 4;
+  }
+  return out;
+}
+
+export function dimensaoMaisFraca(A: number | null, S: number, E: number): "A" | "S" | "E" {
+  const opts: Array<["A" | "S" | "E", number]> = [
+    ["S", S],
+    ["E", E],
+  ];
+  if (A != null) opts.push(["A", A]);
+  opts.sort((a, b) => a[1] - b[1]);
+  return opts[0][0];
+}
+
