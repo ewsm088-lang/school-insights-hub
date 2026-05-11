@@ -16,6 +16,8 @@ import { Route as FormularioRouteImport } from './routes/formulario'
 import { Route as EscolaRouteImport } from './routes/escola'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TurmasIdRouteImport } from './routes/turmas.$id'
+import { Route as AlunosIdRouteImport } from './routes/alunos.$id'
 
 const TurmasRoute = TurmasRouteImport.update({
   id: '/turmas',
@@ -52,6 +54,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TurmasIdRoute = TurmasIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TurmasRoute,
+} as any)
+const AlunosIdRoute = AlunosIdRouteImport.update({
+  id: '/alunos/$id',
+  path: '/alunos/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,7 +72,9 @@ export interface FileRoutesByFullPath {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/turmas': typeof TurmasRoute
+  '/turmas': typeof TurmasRouteWithChildren
+  '/alunos/$id': typeof AlunosIdRoute
+  '/turmas/$id': typeof TurmasIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,7 +83,9 @@ export interface FileRoutesByTo {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/turmas': typeof TurmasRoute
+  '/turmas': typeof TurmasRouteWithChildren
+  '/alunos/$id': typeof AlunosIdRoute
+  '/turmas/$id': typeof TurmasIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,7 +95,9 @@ export interface FileRoutesById {
   '/formulario': typeof FormularioRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/turmas': typeof TurmasRoute
+  '/turmas': typeof TurmasRouteWithChildren
+  '/alunos/$id': typeof AlunosIdRoute
+  '/turmas/$id': typeof TurmasIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +109,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/turmas'
+    | '/alunos/$id'
+    | '/turmas/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +120,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/turmas'
+    | '/alunos/$id'
+    | '/turmas/$id'
   id:
     | '__root__'
     | '/'
@@ -109,6 +131,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/turmas'
+    | '/alunos/$id'
+    | '/turmas/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,7 +142,8 @@ export interface RootRouteChildren {
   FormularioRoute: typeof FormularioRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
-  TurmasRoute: typeof TurmasRoute
+  TurmasRoute: typeof TurmasRouteWithChildren
+  AlunosIdRoute: typeof AlunosIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,8 +197,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/turmas/$id': {
+      id: '/turmas/$id'
+      path: '/$id'
+      fullPath: '/turmas/$id'
+      preLoaderRoute: typeof TurmasIdRouteImport
+      parentRoute: typeof TurmasRoute
+    }
+    '/alunos/$id': {
+      id: '/alunos/$id'
+      path: '/alunos/$id'
+      fullPath: '/alunos/$id'
+      preLoaderRoute: typeof AlunosIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
+
+interface TurmasRouteChildren {
+  TurmasIdRoute: typeof TurmasIdRoute
+}
+
+const TurmasRouteChildren: TurmasRouteChildren = {
+  TurmasIdRoute: TurmasIdRoute,
+}
+
+const TurmasRouteWithChildren =
+  TurmasRoute._addFileChildren(TurmasRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -182,7 +232,8 @@ const rootRouteChildren: RootRouteChildren = {
   FormularioRoute: FormularioRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
-  TurmasRoute: TurmasRoute,
+  TurmasRoute: TurmasRouteWithChildren,
+  AlunosIdRoute: AlunosIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
