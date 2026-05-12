@@ -11,6 +11,22 @@ export type VDIExtra = VDIResult & {
   survey: SurveyRow;
 };
 
+export interface StudentRow {
+  id: string;
+  nome: string;
+  codigoAluno: string;
+  classId: string;
+  serie?: string;
+  turma?: string;
+  schoolId?: string;
+  schoolNome?: string;
+  nota?: number;
+  notaMin?: number;
+  notaMax?: number;
+  A?: number;          // acadêmico normalizado 0-1, se houver nota
+  vdi?: VDIExtra;      // presente apenas quando há survey
+}
+
 const STUDENT_SELECT = `
   id, codigo_aluno, nome, class_id,
   academic_data(nota, nota_min, nota_max),
@@ -55,4 +71,39 @@ export async function loadStudentVdi(studentId: string): Promise<VDIExtra | null
   const { data } = await supabase.from("students").select(STUDENT_SELECT).eq("id", studentId).maybeSingle();
   if (!data) return null;
   return buildVdi(data);
+}
+
+import { calcAcademico } from "@/lib/descartes";
+
+function buildStudentRow(raw: any): StudentRow {
+  const ad = Array.isArray(raw.academic_data) ? raw.academic_data[0] : raw.academic_data;
+  const cl = Array.isArray(raw.classes) ? raw.classes[0] : raw.classes;
+  const sc = cl?.schools ? (Array.isArray(cl.schools) ? cl.schools[0] : cl.schools) : null;
+  const nota = ad?.nota;
+  const notaMin = ad?.nota_min;
+  const notaMax = ad?.nota_max;
+  const A = (nota != null && notaMin != null && notaMax != null)
+    ? calcAcademico(Number(nota), Number(notaMin), Number(notaMax))
+    : undefined;
+  const vdi = buildVdi(raw) ?? undefined;
+  return {
+    id: raw.id,
+    nome: raw.nome || raw.codigo_aluno,
+    codigoAluno: raw.codigo_aluno,
+    classId: raw.class_id,
+    serie: cl?.serie,
+    turma: cl?.nome_turma,
+    schoolId: sc?.id,
+    schoolNome: sc?.nome,
+    nota: nota != null ? Number(nota) : undefined,
+    notaMin: notaMin != null ? Number(notaMin) : undefined,
+    notaMax: notaMax != null ? Number(notaMax) : undefined,
+    A,
+    vdi,
+  };
+}
+
+export async function loadStudentsByClass(classId: string): Promise<StudentRow[]> {
+  const { data } = await supabase.from("students").select(STUDENT_SELECT).eq("class_id", classId).order("nome");
+  return (data ?? []).map(buildStudentRow);
 }
