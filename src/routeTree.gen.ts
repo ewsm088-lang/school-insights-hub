@@ -17,7 +17,6 @@ import { Route as FormularioRouteImport } from './routes/formulario'
 import { Route as EscolaRouteImport } from './routes/escola'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TurmasIdRouteImport } from './routes/turmas.$id'
 import { Route as ResponderTokenRouteImport } from './routes/responder.$token'
 import { Route as AlunosIdRouteImport } from './routes/alunos.$id'
 
@@ -61,11 +60,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TurmasIdRoute = TurmasIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => TurmasRoute,
-} as any)
 const ResponderTokenRoute = ResponderTokenRouteImport.update({
   id: '/responder/$token',
   path: '/responder/$token',
@@ -85,10 +79,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/relatorios': typeof RelatoriosRoute
-  '/turmas': typeof TurmasRouteWithChildren
+  '/turmas': typeof TurmasRoute
   '/alunos/$id': typeof AlunosIdRoute
   '/responder/$token': typeof ResponderTokenRoute
-  '/turmas/$id': typeof TurmasIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -98,10 +91,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/relatorios': typeof RelatoriosRoute
-  '/turmas': typeof TurmasRouteWithChildren
+  '/turmas': typeof TurmasRoute
   '/alunos/$id': typeof AlunosIdRoute
   '/responder/$token': typeof ResponderTokenRoute
-  '/turmas/$id': typeof TurmasIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -112,10 +104,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/relatorios': typeof RelatoriosRoute
-  '/turmas': typeof TurmasRouteWithChildren
+  '/turmas': typeof TurmasRoute
   '/alunos/$id': typeof AlunosIdRoute
   '/responder/$token': typeof ResponderTokenRoute
-  '/turmas/$id': typeof TurmasIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,7 +121,6 @@ export interface FileRouteTypes {
     | '/turmas'
     | '/alunos/$id'
     | '/responder/$token'
-    | '/turmas/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -143,7 +133,6 @@ export interface FileRouteTypes {
     | '/turmas'
     | '/alunos/$id'
     | '/responder/$token'
-    | '/turmas/$id'
   id:
     | '__root__'
     | '/'
@@ -156,7 +145,6 @@ export interface FileRouteTypes {
     | '/turmas'
     | '/alunos/$id'
     | '/responder/$token'
-    | '/turmas/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -167,7 +155,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   RelatoriosRoute: typeof RelatoriosRoute
-  TurmasRoute: typeof TurmasRouteWithChildren
+  TurmasRoute: typeof TurmasRoute
   AlunosIdRoute: typeof AlunosIdRoute
   ResponderTokenRoute: typeof ResponderTokenRoute
 }
@@ -230,13 +218,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/turmas/$id': {
-      id: '/turmas/$id'
-      path: '/$id'
-      fullPath: '/turmas/$id'
-      preLoaderRoute: typeof TurmasIdRouteImport
-      parentRoute: typeof TurmasRoute
-    }
     '/responder/$token': {
       id: '/responder/$token'
       path: '/responder/$token'
@@ -254,17 +235,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface TurmasRouteChildren {
-  TurmasIdRoute: typeof TurmasIdRoute
-}
-
-const TurmasRouteChildren: TurmasRouteChildren = {
-  TurmasIdRoute: TurmasIdRoute,
-}
-
-const TurmasRouteWithChildren =
-  TurmasRoute._addFileChildren(TurmasRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
@@ -273,7 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   RelatoriosRoute: RelatoriosRoute,
-  TurmasRoute: TurmasRouteWithChildren,
+  TurmasRoute: TurmasRoute,
   AlunosIdRoute: AlunosIdRoute,
   ResponderTokenRoute: ResponderTokenRoute,
 }
