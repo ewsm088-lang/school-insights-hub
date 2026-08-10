@@ -15,6 +15,10 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Acesse sua conta DESCARTES" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } =>
+    typeof s.next === "string" && s.next.startsWith("/") && !s.next.startsWith("//")
+      ? { next: s.next }
+      : {},
   component: LoginPage,
 });
 
@@ -23,6 +27,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +38,8 @@ function LoginPage() {
       toast.error("Erro ao entrar: " + error.message);
     } else {
       toast.success("Login realizado com sucesso!");
-      navigate({ to: "/dashboard" });
+      if (next) window.location.href = next;
+      else navigate({ to: "/dashboard" });
     }
   };
 
