@@ -108,20 +108,49 @@ function Index() {
             />
           </div>
 
+          <div className="mt-8 rounded-3xl border bg-card p-6 shadow-sm">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Comparação escolar</p>
+                <h3 className="font-heading text-2xl font-semibold mt-2">Como a escola vira referência</h3>
+              </div>
+              <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">Benchmark por escola</span>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="space-y-4">
+                <code className="block rounded-2xl bg-muted px-4 py-3 text-sm font-mono text-foreground">z = (x − μ) / σ</code>
+                <code className="block rounded-2xl bg-muted px-4 py-3 text-sm font-mono text-foreground">escala_0_100 = 50 + 10z</code>
+                <p className="text-sm leading-7 text-muted-foreground">
+                  O aluno não é avaliado por uma nota absoluta isolada. Ele é comparado à média da sua escola e ao desvio padrão da própria instituição, mantendo o VDI como estrutura principal e tornando a avaliação justa entre escolas diferentes.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border bg-gradient-to-br from-primary/5 via-background to-sky-500/10 p-5">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Interpretação</p>
+                <div className="mt-4 space-y-3 text-sm">
+                  <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2"><span>Acima da escola</span><strong className="text-emerald-600">&gt; 60</strong></div>
+                  <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2"><span>Na linha da escola</span><strong className="text-amber-600">40 a 60</strong></div>
+                  <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2"><span>Abaixo da escola</span><strong className="text-red-600">&lt; 40</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* VDI and IEDE formulas */}
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             <div className="rounded-xl border bg-card p-6">
               <h3 className="font-heading font-semibold mb-3">Vetor Democrático Individual (VDI)</h3>
               <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">VDI = (A, S, E)</code>
               <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-3">|VDI| = √(A² + S² + E²)</code>
-              <p className="text-sm text-muted-foreground">Módulo do vetor que representa o estudante no espaço tridimensional (0 a √3)</p>
+              <p className="text-sm text-muted-foreground">Módulo do vetor que representa o estudante no espaço tridimensional (0 a √3), mantendo o modelo principal intacto.</p>
             </div>
             <div className="rounded-xl border bg-card p-6">
               <h3 className="font-heading font-semibold mb-3">Indicadores da Escola</h3>
               <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">IEDE = Σ|VDI| / n</code>
               <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">σ = √(Σ(|VDI| − IEDE)² / n)</code>
               <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-3">r = Σ(xᵢ−x̄)(yᵢ−ȳ) / √(Σ(xᵢ−x̄)²·Σ(yᵢ−ȳ)²)</code>
-              <p className="text-sm text-muted-foreground">IEDE = média dos |VDI| · σ = desigualdade interna · r = correlação Social × Acadêmico</p>
+              <p className="text-sm text-muted-foreground">IEDE, σ e correlação continuam sendo indicadores da escola, mas a comparação agora é relativizada pela própria distribuição institucional.</p>
             </div>
           </div>
         </div>

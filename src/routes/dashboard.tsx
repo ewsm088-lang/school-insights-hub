@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BarrasDistribuicao } from "@/components/charts/BarrasDistribuicao";
+import { BubbleEquidade } from "@/components/charts/BubbleEquidade";
+import { HeatmapDimensoes } from "@/components/charts/HeatmapDimensoes";
 import { calcDesvioPadrao, calcIEDE, classificar, classifyVDI, VDI_COLORS } from "@/lib/descartes";
 import type { VDIExtra } from "@/lib/load-data";
 import { Activity, ArrowRight, BarChart3, ShieldAlert, Target, TrendingUp, Users } from "lucide-react";
@@ -239,6 +242,38 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-heading">Comparativo por turma</CardTitle>
+                  <CardDescription>Distribuição percentual de alunos em cada faixa de risco.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BarrasDistribuicao vdis={vdis} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-heading">Equidade e desigualdade</CardTitle>
+                  <CardDescription>IEDE × σ por turma; o tamanho dos bolhas representa a quantidade de alunos.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BubbleEquidade vdis={vdis} />
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading">Matriz de dimensões</CardTitle>
+                <CardDescription>Comparação média das dimensões acadêmica, social e socioemocional por turma.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <HeatmapDimensoes vdis={vdis} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="class" className="space-y-6">

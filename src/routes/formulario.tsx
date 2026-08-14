@@ -198,12 +198,34 @@ function FormularioPage() {
           </aside>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="font-heading text-2xl">Questionário de convivência democrática</CardTitle>
-              <CardDescription>Responda com atenção. O objetivo é refletir sobre o ambiente escolar e melhorar a convivência.</CardDescription>
+            <CardHeader className="bg-gradient-to-r from-primary/5 via-background to-sky-500/5 pb-4">
+              <div className="space-y-3">
+                <span className="inline-flex w-fit rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+                  Diagnóstico escolar
+                </span>
+                <CardTitle className="font-heading text-2xl">Questionário de convivência democrática</CardTitle>
+                <CardDescription className="max-w-2xl text-sm leading-6">
+                  Este formulário busca identificar como a escola está vivendo a convivência, a participação, o respeito e o suporte socioemocional. As respostas são analisadas em contexto escolar, com foco em padrões da comunidade e não apenas em notas isoladas.
+                </CardDescription>
+              </div>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 pt-6">
+                <div className="grid gap-3 rounded-2xl border bg-muted/25 p-4 md:grid-cols-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Objetivo</p>
+                    <p className="mt-2 text-sm font-medium">Mapear convivência escolar</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Escala</p>
+                    <p className="mt-2 text-sm font-medium">1 a 5 · frequência/qualidade</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Apoio</p>
+                    <p className="mt-2 text-sm font-medium">Contexto escolar e turma</p>
+                  </div>
+                </div>
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>CREDE</Label>
