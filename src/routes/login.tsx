@@ -15,7 +15,7 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Acesse sua conta DESCARTES" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { next?: string } => ({
     next: typeof s.next === "string" && s.next.startsWith("/") && !s.next.startsWith("//") ? s.next : undefined,
   }),
   component: LoginPage,
