@@ -34,6 +34,7 @@ const STUDENT_SELECT = `
   classes!inner(school_id, nome_turma, serie, schools(id, nome))
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildVdi(raw: any): VDIExtra | null {
   const sr = Array.isArray(raw.survey_responses) ? raw.survey_responses[0] : raw.survey_responses;
   if (!sr) return null;
@@ -75,6 +76,7 @@ export async function loadStudentVdi(studentId: string): Promise<VDIExtra | null
 
 import { calcAcademico } from "@/lib/descartes";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildStudentRow(raw: any): StudentRow {
   const ad = Array.isArray(raw.academic_data) ? raw.academic_data[0] : raw.academic_data;
   const cl = Array.isArray(raw.classes) ? raw.classes[0] : raw.classes;

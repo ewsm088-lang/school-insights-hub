@@ -1,4 +1,32 @@
 // DESCARTES Mathematical Model
+/*
+  Fórmulas (LaTeX)
+
+  Acadêmico:
+  $$
+  A_i = \max\left\{0,\ \min\left\{1,\ \frac{N_i - N_{\min}}{N_{\max} - N_{\min}}\right\}\right\}
+  $$
+
+  Social:
+  $$
+  S = \frac{\overline{s} - 1}{4},\quad \overline{s}=\frac{1}{20}\sum_{k=1}^{20}s_k
+  $$
+
+  Socioemocional:
+  $$
+  E = \frac{\overline{e} - 1}{4},\quad \overline{e}=\frac{1}{20}\sum_{k=1}^{20}e_k
+  $$
+
+  Módulo do VDI:
+  $$
+  |\mathrm{VDI}| = \begin{cases}
+  \sqrt{A^2 + S^2 + E^2}, & \text{se }A\text{ disponível} \\
+  \sqrt{S^2 + E^2}, & \text{se }A\text{ indisponível}
+  \end{cases}
+  $$
+
+  IEDE / Desvio / Pearson / Subdimensões conforme docs/DESCARTES_FORMULAS.md
+*/
 // 40 questions: S01-S20 (Social), E01-E20 (Socioemocional)
 // All values stored as Likert 1-5 integers
 

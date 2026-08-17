@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Download, ChevronRight, Search, Sparkles, Users, GraduationCap, AlertTriangle } from "lucide-react";
 import {
   calcIEDE, calcDesvioPadrao, calcPearson, classifyVDI, VDI_COLORS, classificar,
@@ -26,6 +28,8 @@ function TurmaPage() {
   const [info, setInfo] = useState<{ nome: string; serie: string; school: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [obsOpenFor, setObsOpenFor] = useState<string | null>(null);
+  const [obsText, setObsText] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -319,11 +323,16 @@ function TurmaPage() {
                             )}
                           </td>
                           <td className="p-3 text-right">
-                            <Button asChild variant="ghost" size="sm">
-                              <Link to="/alunos/$id" params={{ id: s.id }}>
-                                Ver <ChevronRight className="h-4 w-4 ml-1" />
-                              </Link>
-                            </Button>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => { setObsOpenFor(s.id); setObsText(""); }}>
+                                Observação
+                              </Button>
+                              <Button asChild variant="ghost" size="sm">
+                                <Link to="/alunos/$id" params={{ id: s.id }}>
+                                  Ver <ChevronRight className="h-4 w-4 ml-1" />
+                                </Link>
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
