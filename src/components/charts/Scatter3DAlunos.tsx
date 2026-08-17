@@ -1,11 +1,79 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { vdiColor } from "@/lib/descartes";
 import type { VDIExtra } from "@/lib/load-data";
 
-const Plot = lazy(() => import("react-plotly.js"));
+const PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js";
+
+function loadPlotly(): Promise<any> {
+  const w = window as any;
+  if (w.Plotly) return Promise.resolve(w.Plotly);
+  if (!w.__plotlyPromise) {
+    w.__plotlyPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = PLOTLY_CDN;
+      script.async = true;
+      script.onload = () => resolve((window as any).Plotly);
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+  return w.__plotlyPromise;
+}
+
+function Plot3D({ points }: { points: { x: number[]; y: number[]; z: number[]; text: string[]; colors: string[] } }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let el: HTMLDivElement | null = null;
+    loadPlotly().then((Plotly) => {
+      if (cancelled || !ref.current) return;
+      el = ref.current;
+      setReady(true);
+      Plotly.react(
+        el,
+        [{
+          type: "scatter3d",
+          mode: "markers",
+          x: points.x, y: points.y, z: points.z,
+          text: points.text,
+          hovertemplate: "%{text}<extra></extra>",
+          marker: { size: 6, color: points.colors, opacity: 0.85, line: { width: 0.5, color: "#222" } },
+        }],
+        {
+          paper_bgcolor: "transparent",
+          plot_bgcolor: "transparent",
+          margin: { l: 0, r: 0, b: 0, t: 0 },
+          scene: {
+            xaxis: { title: { text: "Acadêmico (A)" }, range: [0, 1] },
+            yaxis: { title: { text: "Social (S)" }, range: [0, 1] },
+            zaxis: { title: { text: "Socioemocional (E)" }, range: [0, 1] },
+          },
+          font: { family: "DM Sans, sans-serif" },
+        },
+        { responsive: true, displaylogo: false },
+      );
+    });
+    return () => {
+      cancelled = true;
+      const Plotly = (window as any).Plotly;
+      if (el && Plotly?.purge) Plotly.purge(el);
+    };
+  }, [points]);
+
+  return (
+    <div className="relative">
+      <div ref={ref} style={{ width: "100%", height: "520px" }} />
+      {!ready && (
+        <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">Carregando 3D…</div>
+      )}
+    </div>
+  );
+}
 
 export function Scatter3DAlunos({ vdis }: { vdis: VDIExtra[] }) {
   const [mode, setMode] = useState<"3d" | "2d">("3d");
@@ -49,31 +117,7 @@ export function Scatter3DAlunos({ vdis }: { vdis: VDIExtra[] }) {
       </div>
 
       {mode === "3d" ? (
-        <Suspense fallback={<div className="h-[480px] flex items-center justify-center text-sm text-muted-foreground">Carregando 3D…</div>}>
-          <Plot
-            data={[{
-              type: "scatter3d",
-              mode: "markers",
-              x: points3d.x, y: points3d.y, z: points3d.z,
-              text: points3d.text,
-              hovertemplate: "%{text}<extra></extra>",
-              marker: { size: 6, color: points3d.colors, opacity: 0.85, line: { width: 0.5, color: "#222" } },
-            }] as any}
-            layout={{
-              paper_bgcolor: "transparent",
-              plot_bgcolor: "transparent",
-              margin: { l: 0, r: 0, b: 0, t: 0 },
-              scene: {
-                xaxis: { title: { text: "Acadêmico (A)" }, range: [0, 1] },
-                yaxis: { title: { text: "Social (S)" }, range: [0, 1] },
-                zaxis: { title: { text: "Socioemocional (E)" }, range: [0, 1] },
-              },
-              font: { family: "DM Sans, sans-serif" },
-            }}
-            config={{ responsive: true, displaylogo: false }}
-            style={{ width: "100%", height: "520px" }}
-          />
-        </Suspense>
+        <Plot3D points={points3d} />
       ) : (
         <ResponsiveContainer width="100%" height={460}>
           <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
