@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import { ArrowLeft, Download, ChevronRight, Search, Sparkles, Users, GraduationCap, AlertTriangle } from "lucide-react";
 import {
   calcIEDE, calcDesvioPadrao, calcPearson, classifyVDI, VDI_COLORS, classificar,
@@ -30,6 +31,21 @@ function TurmaPage() {
   const [query, setQuery] = useState("");
   const [obsOpenFor, setObsOpenFor] = useState<string | null>(null);
   const [obsText, setObsText] = useState("");
+
+  async function saveObservation(studentId: string) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Você precisa estar logado para registrar observação"); return; }
+      const payload = { student_id: studentId, author_id: user.id, texto: obsText };
+      const { error } = await supabase.from("observacoes").insert(payload);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Observação registrada");
+      setObsOpenFor(null);
+      setObsText("");
+    } catch (err: any) {
+      toast.error(err?.message || String(err));
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -343,6 +359,24 @@ function TurmaPage() {
             )}
           </CardContent>
         </Card>
+        {/* Observação — modal */}
+        <Dialog open={!!obsOpenFor} onOpenChange={(open) => { if (!open) setObsOpenFor(null); }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Registrar observação</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">Aluno: {obsOpenFor ? (students.find(s => s.id === obsOpenFor)?.nome || obsOpenFor) : ""}</p>
+              <Textarea value={obsText} onChange={(e) => setObsText((e.target as HTMLTextAreaElement).value)} placeholder="Descreva a observação pedagógica" />
+              <div className="flex justify-end gap-2">
+                <DialogClose asChild>
+                  <Button variant="outline">Cancelar</Button>
+                </DialogClose>
+                <Button onClick={() => obsOpenFor && saveObservation(obsOpenFor)}>Salvar observação</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
