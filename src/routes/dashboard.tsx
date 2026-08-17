@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarrasDistribuicao } from "@/components/charts/BarrasDistribuicao";
 import { BubbleEquidade } from "@/components/charts/BubbleEquidade";
 import { HeatmapDimensoes } from "@/components/charts/HeatmapDimensoes";
-import { calcDesvioPadrao, calcIEDE, classificar, classifyVDI, VDI_COLORS } from "@/lib/descartes";
+import { calcDesvioPadrao, calcIEDE, calcVDI, classificar, classifyVDI, VDI_COLORS } from "@/lib/descartes";
 import type { VDIExtra } from "@/lib/load-data";
 import { Activity, ArrowRight, BarChart3, ShieldAlert, Target, TrendingUp, Users } from "lucide-react";
 
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/dashboard")({
     if (!session) {
       throw redirect({
         to: "/login",
-        search: { next: `${location.pathname}${location.search}` },
+        search: { next: location.href },
       });
     }
   },
@@ -94,9 +94,9 @@ function DashboardPage() {
           ),
         } as any;
 
-        const vdi = (await import("@/lib/descartes")).calcVDI(student);
+        const vdi = calcVDI(student);
         if (vdi) {
-          results.push({ ...vdi, serie: cl?.serie, turma: cl?.nome_turma, classId: raw.class_id, studentId: raw.id, nome: student.nome, codigoAluno: raw.codigo_aluno });
+          results.push({ ...vdi, survey: student.survey, serie: cl?.serie, turma: cl?.nome_turma, classId: raw.class_id, studentId: raw.id, nome: student.nome, codigoAluno: raw.codigo_aluno });
         }
       }
       setVdis(results);

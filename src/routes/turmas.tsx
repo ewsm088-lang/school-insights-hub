@@ -17,7 +17,7 @@ export const Route = createFileRoute("/turmas")({
     if (!session) {
       throw redirect({
         to: "/login",
-        search: { next: `${location.pathname}${location.search}` },
+        search: { next: location.href },
       });
     }
   },
