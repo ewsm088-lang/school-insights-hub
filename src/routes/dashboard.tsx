@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarrasDistribuicao } from "@/components/charts/BarrasDistribuicao";
 import { BubbleEquidade } from "@/components/charts/BubbleEquidade";
 import { HeatmapDimensoes } from "@/components/charts/HeatmapDimensoes";
-import { calcDesvioPadrao, calcIEDE, calcVDI, classificar, classifyVDI, VDI_COLORS } from "@/lib/descartes";
-import type { VDIExtra } from "@/lib/load-data";
+import { calcDesvioPadrao, calcIEDE, classificar, classifyVDI, VDI_COLORS } from "@/lib/descartes";
+import { loadVdisBySchool, type VDIExtra } from "@/lib/load-data";
+import { MathBlock } from "@/components/Formula";
 import { Activity, ArrowRight, BarChart3, ShieldAlert, Target, TrendingUp, Users } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
@@ -62,45 +63,9 @@ function DashboardPage() {
     const { data: classData } = await supabase.from("classes").select("id, nome_turma, serie").eq("school_id", schoolData.id).order("serie");
     if (classData) setClasses(classData);
 
-    const { data: studentsRaw } = await supabase
-      .from("students")
-      .select(`id, codigo_aluno, nome, class_id, classes!inner(school_id, nome_turma, serie), survey_responses(s01,s02,s03,s04,s05,s06,s07,s08,s09,s10,s11,s12,s13,s14,s15,s16,s17,s18,s19,s20,e01,e02,e03,e04,e05,e06,e07,e08,e09,e10,e11,e12,e13,e14,e15,e16,e17,e18,e19,e20)`)
-      .eq("classes.school_id", schoolData.id);
-
-    if (studentsRaw) {
-      const mapped = studentsRaw
-        .map((raw: any) => {
-          const sr = Array.isArray(raw.survey_responses) ? raw.survey_responses[0] : raw.survey_responses;
-          if (!sr) return null;
-          const result = { ...raw, survey_responses: sr };
-          return result;
-        })
-        .filter(Boolean) as any[];
-      const results: VDIExtra[] = [];
-      for (const raw of mapped) {
-        const sr = raw.survey_responses;
-        const cl = Array.isArray(raw.classes) ? raw.classes[0] : raw.classes;
-        const student = {
-          id: raw.id,
-          nome: raw.nome || raw.codigo_aluno,
-          codigo_aluno: raw.codigo_aluno,
-          class_id: raw.class_id,
-          survey: Object.fromEntries(
-            Array.from({ length: 40 }, (_, i) => {
-              const keys = [...(Array.from({ length: 20 }, (_, idx) => `s${String(idx + 1).padStart(2, "0")}`)), ...(Array.from({ length: 20 }, (_, idx) => `e${String(idx + 1).padStart(2, "0")}`))];
-              const key = keys[i];
-              return [key, sr[key] ?? 3];
-            })
-          ),
-        } as any;
-
-        const vdi = calcVDI(student);
-        if (vdi) {
-          results.push({ ...vdi, survey: student.survey, serie: cl?.serie, turma: cl?.nome_turma, classId: raw.class_id, studentId: raw.id, nome: student.nome, codigoAluno: raw.codigo_aluno });
-        }
-      }
-      setVdis(results);
-    }
+    // inclui academic_data → dimensão acadêmica (A) real
+    const results = await loadVdisBySchool(schoolData.id);
+    setVdis(results);
 
     setLoading(false);
   }
@@ -272,6 +237,19 @@ function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <HeatmapDimensoes vdis={vdis} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading">Fórmulas do modelo</CardTitle>
+                <CardDescription>Base matemática dos indicadores apresentados acima.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 lg:grid-cols-2">
+                <MathBlock caption="Eixo acadêmico (normalização min–max)">{String.raw`A_i=\max\left\{0,\min\left\{1,\frac{N_i-N_{\min}}{N_{\max}-N_{\min}}\right\}\right\}`}</MathBlock>
+                <MathBlock caption="Eixos social e socioemocional (Likert 1–5)">{String.raw`S=\frac{\bar{s}-1}{4},\qquad E=\frac{\bar{e}-1}{4}`}</MathBlock>
+                <MathBlock caption="Módulo do vetor democrático individual">{String.raw`\left|\mathrm{VDI}\right|=\sqrt{A^{2}+S^{2}+E^{2}}`}</MathBlock>
+                <MathBlock caption="Índice da escola e desigualdade interna">{String.raw`\mathrm{IEDE}=\frac{1}{n}\sum_{i=1}^{n}\left|\mathrm{VDI}_i\right|,\qquad \sigma=\sqrt{\frac{1}{n}\sum_{i=1}^{n}\left(\left|\mathrm{VDI}_i\right|-\mathrm{IEDE}\right)^{2}}`}</MathBlock>
               </CardContent>
             </Card>
           </TabsContent>

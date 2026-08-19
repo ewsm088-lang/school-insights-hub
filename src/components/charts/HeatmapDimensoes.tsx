@@ -10,10 +10,11 @@ export function HeatmapDimensoes({ vdis }: { vdis: VDIExtra[] }) {
   }
   const rows = Array.from(byClass.entries()).map(([nome, list]) => {
     const n = list.length || 1;
-    const A = list.reduce((s, v) => s + v.A, 0) / n;
+    const comA = list.filter((v) => v.hasA ?? v.A > 0);
+    const A = comA.length ? comA.reduce((s, v) => s + v.A, 0) / comA.length : null;
     const S = list.reduce((s, v) => s + v.S, 0) / n;
     const E = list.reduce((s, v) => s + v.E, 0) / n;
-    return { nome, A, S, E, n };
+    return { nome, A, S, E, n, nA: comA.length };
   }).sort((a, b) => a.nome.localeCompare(b.nome));
 
   const cell = (v: number) => {
@@ -41,13 +42,23 @@ export function HeatmapDimensoes({ vdis }: { vdis: VDIExtra[] }) {
           {rows.map((r) => (
             <tr key={r.nome} className="border-t">
               <td className="p-2 font-medium">{r.nome}</td>
-              {(["A","S","E"] as const).map((k) => (
-                <td key={k} className="p-1">
-                  <div className="rounded px-3 py-2 text-center text-xs font-semibold text-white" style={{ background: cell(r[k]) }}>
-                    {r[k].toFixed(2)}
-                  </div>
-                </td>
-              ))}
+              {(["A","S","E"] as const).map((k) => {
+                const v = r[k];
+                return (
+                  <td key={k} className="p-1">
+                    {v == null ? (
+                      <div className="rounded border border-dashed px-3 py-2 text-center text-xs text-muted-foreground">
+                        sem nota
+                      </div>
+                    ) : (
+                      <div className="rounded px-3 py-2 text-center text-xs font-semibold text-white" style={{ background: cell(v) }}>
+                        {v.toFixed(2)}
+                        {k === "A" && r.nA < r.n && <span className="ml-1 font-normal opacity-80">({r.nA})</span>}
+                      </div>
+                    )}
+                  </td>
+                );
+              })}
               <td className="p-2 text-center text-muted-foreground">{r.n}</td>
             </tr>
           ))}

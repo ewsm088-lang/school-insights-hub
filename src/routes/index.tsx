@@ -1,3 +1,4 @@
+import { MathBlock } from "@/components/Formula";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -86,14 +87,14 @@ function Index() {
             <AxisCard
               axis="X"
               label="Acadêmico (A)"
-              formula="A = (N - Nmin) / (Nmax - Nmin)"
+              formula={String.raw`A=\frac{N-N_{\min}}{N_{\max}-N_{\min}}`}
               description="Normalização min-max das notas escolares para o intervalo [0, 1]"
               color="bg-chart-1"
             />
             <AxisCard
               axis="Y"
               label="Social (S)"
-              formula="Escala Likert (1–5)"
+              formula={String.raw`S=\frac{\bar{s}-1}{4}`}
               subdimensions="20 itens · Participação, Respeito, Colaboração"
               description="Resposta dos alunos em escala Likert, normalizada para [0, 1]"
               color="bg-chart-2"
@@ -101,7 +102,7 @@ function Index() {
             <AxisCard
               axis="Z"
               label="Socioemocional (E)"
-              formula="Escala Likert (1–5)"
+              formula={String.raw`E=\frac{\bar{e}-1}{4}`}
               subdimensions="20 itens · Autogestão, Empatia, Resolução de Conflitos"
               description="Resposta dos alunos em escala Likert, normalizada para [0, 1]"
               color="bg-chart-3"
@@ -119,8 +120,8 @@ function Index() {
 
             <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
               <div className="space-y-4">
-                <code className="block rounded-2xl bg-muted px-4 py-3 text-sm font-mono text-foreground">z = (x − μ) / σ</code>
-                <code className="block rounded-2xl bg-muted px-4 py-3 text-sm font-mono text-foreground">escala_0_100 = 50 + 10z</code>
+                <MathBlock>{String.raw`z=\frac{x-\mu}{\sigma}`}</MathBlock>
+                <MathBlock>{String.raw`\text{escala}_{0\text{-}100}=50+10z`}</MathBlock>
                 <p className="text-sm leading-7 text-muted-foreground">
                   O aluno não é avaliado por uma nota absoluta isolada. Ele é comparado à média da sua escola e ao desvio padrão da própria instituição, mantendo o VDI como estrutura principal e tornando a avaliação justa entre escolas diferentes.
                 </p>
@@ -141,15 +142,12 @@ function Index() {
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             <div className="rounded-xl border bg-card p-6">
               <h3 className="font-heading font-semibold mb-3">Vetor Democrático Individual (VDI)</h3>
-              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">VDI = (A, S, E)</code>
-              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-3">|VDI| = √(A² + S² + E²)</code>
+              <div className="space-y-3 mb-3"><MathBlock>{String.raw`\mathrm{VDI}=(A,\;S,\;E)`}</MathBlock><MathBlock>{String.raw`\left|\mathrm{VDI}\right|=\sqrt{A^{2}+S^{2}+E^{2}}`}</MathBlock></div>
               <p className="text-sm text-muted-foreground">Módulo do vetor que representa o estudante no espaço tridimensional (0 a √3), mantendo o modelo principal intacto.</p>
             </div>
             <div className="rounded-xl border bg-card p-6">
               <h3 className="font-heading font-semibold mb-3">Indicadores da Escola</h3>
-              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">IEDE = Σ|VDI| / n</code>
-              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">σ = √(Σ(|VDI| − IEDE)² / n)</code>
-              <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-3">r = Σ(xᵢ−x̄)(yᵢ−ȳ) / √(Σ(xᵢ−x̄)²·Σ(yᵢ−ȳ)²)</code>
+              <div className="space-y-3 mb-3"><MathBlock>{String.raw`\mathrm{IEDE}=\frac{1}{n}\sum_{i=1}^{n}\left|\mathrm{VDI}_i\right|`}</MathBlock><MathBlock>{String.raw`\sigma=\sqrt{\frac{1}{n}\sum_{i=1}^{n}\left(\left|\mathrm{VDI}_i\right|-\mathrm{IEDE}\right)^{2}}`}</MathBlock><MathBlock>{String.raw`r=\frac{\sum (x_i-\bar{x})(y_i-\bar{y})}{\sqrt{\sum (x_i-\bar{x})^{2}}\;\sqrt{\sum (y_i-\bar{y})^{2}}}`}</MathBlock></div>
               <p className="text-sm text-muted-foreground">IEDE, σ e correlação continuam sendo indicadores da escola, mas a comparação agora é relativizada pela própria distribuição institucional.</p>
             </div>
           </div>
@@ -185,7 +183,7 @@ function AxisCard({ axis, label, formula, subdimensions, description, color }: {
         </div>
         <h3 className="font-heading font-semibold">{label}</h3>
       </div>
-      <code className="block rounded bg-muted px-3 py-2 text-sm font-mono mb-2">{formula}</code>
+      <div className="mb-2"><MathBlock>{formula}</MathBlock></div>
       {subdimensions && (
         <p className="text-xs text-muted-foreground mb-2">{subdimensions}</p>
       )}

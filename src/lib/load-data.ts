@@ -8,6 +8,8 @@ export type VDIExtra = VDIResult & {
   turma?: string;
   schoolId?: string;
   schoolNome?: string;
+  hasA?: boolean;
+  nota?: number;
   survey: SurveyRow;
 };
 
@@ -55,7 +57,17 @@ function buildVdi(raw: any): VDIExtra | null {
   if (!vdi) return null;
   const cl = Array.isArray(raw.classes) ? raw.classes[0] : raw.classes;
   const sc = cl?.schools ? (Array.isArray(cl.schools) ? cl.schools[0] : cl.schools) : null;
-  return { ...vdi, serie: cl?.serie, turma: cl?.nome_turma, schoolId: sc?.id, schoolNome: sc?.nome, survey };
+  const hasA = ad?.nota != null && ad?.nota_min != null && ad?.nota_max != null;
+  return {
+    ...vdi,
+    serie: cl?.serie,
+    turma: cl?.nome_turma,
+    schoolId: sc?.id,
+    schoolNome: sc?.nome,
+    hasA,
+    nota: ad?.nota != null ? Number(ad.nota) : undefined,
+    survey,
+  };
 }
 
 export async function loadVdisBySchool(schoolId: string): Promise<VDIExtra[]> {

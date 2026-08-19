@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeft, Download, ChevronRight, Search, Sparkles, Users, GraduationCap, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Download, ChevronRight, Search, Sparkles, Users, GraduationCap, AlertTriangle, Trash2 } from "lucide-react";
 import {
   calcIEDE, calcDesvioPadrao, calcPearson, classifyVDI, VDI_COLORS, classificar,
 } from "@/lib/descartes";
@@ -31,6 +31,21 @@ function TurmaPage() {
   const [query, setQuery] = useState("");
   const [obsOpenFor, setObsOpenFor] = useState<string | null>(null);
   const [obsText, setObsText] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<StudentRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function deleteStudent(student: StudentRow) {
+    setDeleting(true);
+    const { error } = await supabase.from("students").delete().eq("id", student.id);
+    setDeleting(false);
+    if (error) {
+      toast.error("Não foi possível excluir. Só o responsável pela escola pode remover alunos.");
+      return;
+    }
+    setStudents((prev) => prev.filter((s) => s.id !== student.id));
+    setDeleteTarget(null);
+    toast.success(`${student.nome} foi removido da turma`);
+  }
 
   async function saveObservation(studentId: string) {
     try {
@@ -348,6 +363,15 @@ function TurmaPage() {
                                   Ver <ChevronRight className="h-4 w-4 ml-1" />
                                 </Link>
                               </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                aria-label={`Excluir ${s.nome}`}
+                                className="text-muted-foreground hover:text-destructive"
+                                onClick={() => setDeleteTarget(s)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -373,6 +397,27 @@ function TurmaPage() {
                   <Button variant="outline">Cancelar</Button>
                 </DialogClose>
                 <Button onClick={() => obsOpenFor && saveObservation(obsOpenFor)}>Salvar observação</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Excluir aluno — confirmação */}
+        <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Excluir aluno</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                <strong className="text-foreground">{deleteTarget?.nome}</strong> será removido permanentemente,
+                junto com suas respostas do questionário, notas e observações. Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-end gap-2">
+                <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+                <Button variant="destructive" disabled={deleting} onClick={() => deleteTarget && deleteStudent(deleteTarget)}>
+                  {deleting ? "Excluindo…" : "Excluir aluno"}
+                </Button>
               </div>
             </div>
           </DialogContent>
