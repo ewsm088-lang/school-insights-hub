@@ -239,6 +239,19 @@ function DashboardPage() {
                 <HeatmapDimensoes vdis={vdis} />
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading">Fórmulas do modelo</CardTitle>
+                <CardDescription>Base matemática dos indicadores apresentados acima.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 lg:grid-cols-2">
+                <MathBlock caption="Eixo acadêmico (normalização min–max)">{String.raw`A_i=\max\left\{0,\min\left\{1,\frac{N_i-N_{\min}}{N_{\max}-N_{\min}}\right\}\right\}`}</MathBlock>
+                <MathBlock caption="Eixos social e socioemocional (Likert 1–5)">{String.raw`S=\frac{\bar{s}-1}{4},\qquad E=\frac{\bar{e}-1}{4}`}</MathBlock>
+                <MathBlock caption="Módulo do vetor democrático individual">{String.raw`\left|\mathrm{VDI}\right|=\sqrt{A^{2}+S^{2}+E^{2}}`}</MathBlock>
+                <MathBlock caption="Índice da escola e desigualdade interna">{String.raw`\mathrm{IEDE}=\frac{1}{n}\sum_{i=1}^{n}\left|\mathrm{VDI}_i\right|,\qquad \sigma=\sqrt{\frac{1}{n}\sum_{i=1}^{n}\left(\left|\mathrm{VDI}_i\right|-\mathrm{IEDE}\right)^{2}}`}</MathBlock>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="class" className="space-y-6">
