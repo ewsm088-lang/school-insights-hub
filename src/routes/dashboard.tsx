@@ -7,9 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarrasDistribuicao } from "@/components/charts/BarrasDistribuicao";
-import { BubbleEquidade } from "@/components/charts/BubbleEquidade";
-import { HeatmapDimensoes } from "@/components/charts/HeatmapDimensoes";
+import { RelatorioCharts } from "@/components/charts/RelatorioCharts";
 import { calcDesvioPadrao, calcIEDE, classificar, classifyVDI, VDI_COLORS } from "@/lib/descartes";
 import { loadVdisBySchool, type VDIExtra } from "@/lib/load-data";
 import { MathBlock } from "@/components/Formula";
@@ -42,8 +40,10 @@ function DashboardPage() {
   const [vdis, setVdis] = useState<VDIExtra[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // loadData is intentionally scoped to the initial authenticated dashboard request.
   useEffect(() => {
     void loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadData() {
@@ -208,37 +208,15 @@ function DashboardPage() {
               </Card>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-heading">Comparativo por turma</CardTitle>
-                  <CardDescription>Distribuição percentual de alunos em cada faixa de risco.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <BarrasDistribuicao vdis={vdis} />
+            {filteredVdis.length > 0 ? (
+              <RelatorioCharts vdis={filteredVdis} schoolVdis={vdis} />
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center text-sm text-muted-foreground">
+                  Não há dados DESCARTES para este recorte. Selecione outra turma ou aguarde novas coletas.
                 </CardContent>
               </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-heading">Equidade e desigualdade</CardTitle>
-                  <CardDescription>IEDE × σ por turma; o tamanho dos bolhas representa a quantidade de alunos.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <BubbleEquidade vdis={vdis} />
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-heading">Matriz de dimensões</CardTitle>
-                <CardDescription>Comparação média das dimensões acadêmica, social e socioemocional por turma.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <HeatmapDimensoes vdis={vdis} />
-              </CardContent>
-            </Card>
+            )}
 
             <Card>
               <CardHeader>
