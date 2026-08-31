@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft, Download, ChevronRight, Search, Sparkles, Users, GraduationCap, AlertTriangle, Trash2 } from "lucide-react";
@@ -36,9 +37,9 @@ function TurmaPage() {
 
   async function deleteStudent(student: StudentRow) {
     setDeleting(true);
-    const { error } = await supabase.from("students").delete().eq("id", student.id);
+    const { data, error } = await supabase.from("students").delete().eq("id", student.id).select("id");
     setDeleting(false);
-    if (error) {
+    if (error || !data?.length) {
       toast.error("Não foi possível excluir. Só o responsável pela escola pode remover alunos.");
       return;
     }
@@ -57,8 +58,8 @@ function TurmaPage() {
       toast.success("Observação registrada");
       setObsOpenFor(null);
       setObsText("");
-    } catch (err: any) {
-      toast.error(err?.message || String(err));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -69,8 +70,13 @@ function TurmaPage() {
       const { data: turma } = await supabase
         .from("classes").select("nome_turma, serie, schools(nome)").eq("id", id).maybeSingle();
       if (!cancelled && turma) {
-        const sc: any = Array.isArray((turma as any).schools) ? (turma as any).schools[0] : (turma as any).schools;
-        setInfo({ nome: turma.nome_turma, serie: turma.serie, school: sc?.nome ?? "" });
+        const turmaRecord = turma as unknown as {
+          nome_turma: string;
+          serie: string;
+          schools?: { nome?: string } | Array<{ nome?: string }> | null;
+        };
+        const sc = Array.isArray(turmaRecord.schools) ? turmaRecord.schools[0] : turmaRecord.schools;
+        setInfo({ nome: turmaRecord.nome_turma, serie: turmaRecord.serie, school: sc?.nome ?? "" });
       }
       const rows = await loadStudentsByClass(id);
       if (!cancelled) { setStudents(rows); setLoading(false); }
@@ -402,26 +408,23 @@ function TurmaPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Excluir aluno — confirmação */}
-        <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Excluir aluno</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                <strong className="text-foreground">{deleteTarget?.nome}</strong> será removido permanentemente,
-                junto com suas respostas do questionário, notas e observações. Esta ação não pode ser desfeita.
-              </p>
-              <div className="flex justify-end gap-2">
-                <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-                <Button variant="destructive" disabled={deleting} onClick={() => deleteTarget && deleteStudent(deleteTarget)}>
-                  {deleting ? "Excluindo…" : "Excluir aluno"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Excluir aluno — confirmação destrutiva */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open && !deleting) setDeleteTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir aluno permanentemente?</AlertDialogTitle>
+              <AlertDialogDescription>
+                <strong className="text-foreground">{deleteTarget?.nome}</strong> será removido desta turma junto com respostas, notas e observações associadas. Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={deleting} onClick={(event) => { event.preventDefault(); if (deleteTarget) void deleteStudent(deleteTarget); }}>
+                {deleting ? "Excluindo…" : "Sim, excluir aluno"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

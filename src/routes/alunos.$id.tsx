@@ -1,11 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { classifyVDI, VDI_COLORS, dimensaoMaisFraca } from "@/lib/descartes";
 import { loadStudentVdi, loadVdisByClass, type VDIExtra } from "@/lib/load-data";
 import { GaugeVDI } from "@/components/charts/GaugeVDI";
@@ -20,14 +22,19 @@ interface Obs { id: string; texto: string; created_at: string }
 
 function AlunoPage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const [aluno, setAluno] = useState<VDIExtra | null>(null);
   const [turmaVdis, setTurmaVdis] = useState<VDIExtra[]>([]);
   const [obs, setObs] = useState<Obs[]>([]);
   const [novoObs, setNovoObs] = useState("");
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
+  // The detail view reloads whenever the route ID changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void load(); }, [id]);
 
   async function load() {
     setLoading(true);
@@ -42,6 +49,19 @@ function AlunoPage() {
     const { data: o } = await supabase.from("observacoes").select("id, texto, created_at").eq("student_id", id).order("created_at", { ascending: false });
     setObs(o ?? []);
     setLoading(false);
+  }
+
+  async function deleteStudent() {
+    if (!aluno) return;
+    setDeleting(true);
+    const { data, error } = await supabase.from("students").delete().eq("id", aluno.studentId).select("id");
+    setDeleting(false);
+    if (error || !data?.length) {
+      toast.error("Não foi possível excluir. Só o responsável pela escola pode remover alunos.");
+      return;
+    }
+    toast.success(`${aluno.nome} foi removido`);
+    navigate({ to: "/turmas/$id", params: { id: aluno.classId } });
   }
 
   async function addObs() {
@@ -65,10 +85,17 @@ function AlunoPage() {
         <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2">
           <Link to="/turmas/$id" params={{ id: aluno.classId }}><ArrowLeft className="h-4 w-4 mr-1" /> Voltar à turma</Link>
         </Button>
-        <h1 className="font-heading text-3xl font-bold tracking-tight">{aluno.nome}</h1>
-        <p className="text-sm text-muted-foreground">
-          {aluno.schoolNome} · {aluno.serie} {aluno.turma} · cód. {aluno.codigoAluno}
-        </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="font-heading text-3xl font-bold tracking-tight">{aluno.nome}</h1>
+            <p className="text-sm text-muted-foreground">
+              {aluno.schoolNome} · {aluno.serie} {aluno.turma} · cód. {aluno.codigoAluno}
+            </p>
+          </div>
+          <Button variant="outline" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" /> Excluir aluno
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -111,6 +138,23 @@ function AlunoPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteOpen} onOpenChange={(open) => { if (!open && !deleting) setDeleteOpen(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir aluno permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong className="text-foreground">{aluno.nome}</strong> será removido junto com respostas, notas e observações associadas. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={deleting} onClick={(event) => { event.preventDefault(); void deleteStudent(); }}>
+              {deleting ? "Excluindo…" : "Sim, excluir aluno"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
