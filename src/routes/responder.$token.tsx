@@ -71,9 +71,9 @@ function ResponderPage() {
     try {
       let sid = studentId;
       if (!sid && newStudentName.trim() && classId) {
-        const code = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const code = newStudentName.trim().replace(/[^0-9A-Za-z/-]/g, "").slice(0, 20);
         const { data: created, error: serr } = await supabase
-          .from("students").insert({ class_id: classId, nome: newStudentName.trim(), codigo_aluno: code }).select("id").single();
+          .from("students").insert({ class_id: classId, nome: null, codigo_aluno: code }).select("id").single();
         if (serr || !created) throw serr ?? new Error("insert failed");
         sid = created.id;
       }
