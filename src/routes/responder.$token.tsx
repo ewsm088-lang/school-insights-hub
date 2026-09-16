@@ -57,7 +57,7 @@ function ResponderPage() {
 
   useEffect(() => {
     if (!classId) return;
-    supabase.from("students").select("id, nome, codigo_aluno").eq("class_id", classId).order("nome").then(({ data }) => setStudents(data ?? []));
+    supabase.from("students").select("id, nome, codigo_aluno").eq("class_id", classId).order("codigo_aluno").then(({ data }) => setStudents(data ?? []));
   }, [classId]);
 
   const totalQuestions = ALL_QUESTIONS.length;
