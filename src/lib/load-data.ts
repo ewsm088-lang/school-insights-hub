@@ -45,7 +45,7 @@ function buildVdi(raw: any): VDIExtra | null {
   const ad = Array.isArray(raw.academic_data) ? raw.academic_data[0] : raw.academic_data;
   const student: StudentData = {
     id: raw.id,
-    nome: raw.nome || raw.codigo_aluno,
+    nome: raw.codigo_aluno, // LGPD: identificação apenas por matrícula
     codigo_aluno: raw.codigo_aluno,
     class_id: raw.class_id,
     survey,
