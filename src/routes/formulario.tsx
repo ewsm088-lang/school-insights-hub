@@ -84,7 +84,7 @@ function FormularioPage() {
 
     const safeName = sanitizeText(nomeAluno);
     if (!safeName) {
-      toast.error("Informe o nome do aluno antes de enviar.");
+      toast.error("Informe a matrícula do aluno antes de enviar.");
       return;
     }
     if (!selectedClass || !selectedSchool) {
