@@ -118,6 +118,6 @@ function buildStudentRow(raw: any): StudentRow {
 }
 
 export async function loadStudentsByClass(classId: string): Promise<StudentRow[]> {
-  const { data } = await supabase.from("students").select(STUDENT_SELECT).eq("class_id", classId).order("nome");
+  const { data } = await supabase.from("students").select(STUDENT_SELECT).eq("class_id", classId).order("codigo_aluno");
   return (data ?? []).map(buildStudentRow);
 }
