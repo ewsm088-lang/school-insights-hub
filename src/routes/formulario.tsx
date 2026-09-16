@@ -84,7 +84,7 @@ function FormularioPage() {
 
     const safeName = sanitizeText(nomeAluno);
     if (!safeName) {
-      toast.error("Informe o nome do aluno antes de enviar.");
+      toast.error("Informe a matrícula do aluno antes de enviar.");
       return;
     }
     if (!selectedClass || !selectedSchool) {
@@ -100,7 +100,7 @@ function FormularioPage() {
 
     const { data: student, error: studentError } = await supabase
       .from("students")
-      .insert({ class_id: selectedClass, codigo_aluno: safeName, nome: safeName })
+      .insert({ class_id: selectedClass, codigo_aluno: safeName, nome: null })
       .select("id")
       .single();
 
@@ -264,14 +264,18 @@ function FormularioPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="nome">Nome do aluno</Label>
+                    <Label htmlFor="nome">Matrícula do aluno</Label>
                     <Input
                       id="nome"
-                      placeholder="Digite seu nome completo"
+                      inputMode="numeric"
+                      placeholder="Ex.: 3601121"
                       value={nomeAluno}
                       onChange={(e) => setNomeAluno(sanitizeText(e.target.value))}
                       required
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Para proteger seus dados (LGPD), usamos apenas o número de matrícula — não informe seu nome.
+                    </p>
                   </div>
                 </div>
 

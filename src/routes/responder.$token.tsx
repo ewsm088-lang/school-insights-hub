@@ -57,7 +57,7 @@ function ResponderPage() {
 
   useEffect(() => {
     if (!classId) return;
-    supabase.from("students").select("id, nome, codigo_aluno").eq("class_id", classId).order("nome").then(({ data }) => setStudents(data ?? []));
+    supabase.from("students").select("id, nome, codigo_aluno").eq("class_id", classId).order("codigo_aluno").then(({ data }) => setStudents(data ?? []));
   }, [classId]);
 
   const totalQuestions = ALL_QUESTIONS.length;
@@ -71,9 +71,9 @@ function ResponderPage() {
     try {
       let sid = studentId;
       if (!sid && newStudentName.trim() && classId) {
-        const code = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const code = newStudentName.trim().replace(/[^0-9A-Za-z/-]/g, "").slice(0, 20);
         const { data: created, error: serr } = await supabase
-          .from("students").insert({ class_id: classId, nome: newStudentName.trim(), codigo_aluno: code }).select("id").single();
+          .from("students").insert({ class_id: classId, nome: null, codigo_aluno: code }).select("id").single();
         if (serr || !created) throw serr ?? new Error("insert failed");
         sid = created.id;
       }
@@ -142,15 +142,15 @@ function ResponderPage() {
             )}
 
             {stage === 2 && (
-              <Step title="Passo 3 de 3" subtitle="Selecione seu nome">
+              <Step title="Passo 3 de 3" subtitle="Selecione sua matrícula">
                 <Select value={studentId} onValueChange={(v) => { setStudentId(v); setNewStudentName(""); }}>
-                  <SelectTrigger><SelectValue placeholder="Encontre seu nome" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Encontre sua matrícula" /></SelectTrigger>
                   <SelectContent>
-                    {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome || s.codigo_aluno}</SelectItem>)}
+                    {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.codigo_aluno}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <div className="text-xs text-muted-foreground text-center">ou digite seu nome se não encontrar:</div>
-                <Input placeholder="Seu nome completo" value={newStudentName} onChange={(e) => { setNewStudentName(e.target.value); setStudentId(""); }} />
+                <div className="text-xs text-muted-foreground text-center">ou digite sua matrícula se não encontrar:</div>
+                <Input inputMode="numeric" placeholder="Ex.: 3601121" value={newStudentName} onChange={(e) => { setNewStudentName(e.target.value); setStudentId(""); }} />
                 <div className="flex gap-2">
                   <Button variant="outline" size="lg" onClick={() => setStage(1)}><ChevronLeft className="h-4 w-4" /></Button>
                   <Button className="flex-1" size="lg" disabled={!studentId && !newStudentName.trim()} onClick={() => setStage(3)}>Começar</Button>

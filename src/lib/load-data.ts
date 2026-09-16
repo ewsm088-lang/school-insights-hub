@@ -45,7 +45,7 @@ function buildVdi(raw: any): VDIExtra | null {
   const ad = Array.isArray(raw.academic_data) ? raw.academic_data[0] : raw.academic_data;
   const student: StudentData = {
     id: raw.id,
-    nome: raw.nome || raw.codigo_aluno,
+    nome: raw.codigo_aluno, // LGPD: identificação apenas por matrícula
     codigo_aluno: raw.codigo_aluno,
     class_id: raw.class_id,
     survey,
@@ -102,7 +102,7 @@ function buildStudentRow(raw: any): StudentRow {
   const vdi = buildVdi(raw) ?? undefined;
   return {
     id: raw.id,
-    nome: raw.nome || raw.codigo_aluno,
+    nome: raw.codigo_aluno, // LGPD: identificação apenas por matrícula
     codigoAluno: raw.codigo_aluno,
     classId: raw.class_id,
     serie: cl?.serie,
@@ -118,6 +118,6 @@ function buildStudentRow(raw: any): StudentRow {
 }
 
 export async function loadStudentsByClass(classId: string): Promise<StudentRow[]> {
-  const { data } = await supabase.from("students").select(STUDENT_SELECT).eq("class_id", classId).order("nome");
+  const { data } = await supabase.from("students").select(STUDENT_SELECT).eq("class_id", classId).order("codigo_aluno");
   return (data ?? []).map(buildStudentRow);
 }
