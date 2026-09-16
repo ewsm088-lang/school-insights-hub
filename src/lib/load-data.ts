@@ -102,7 +102,7 @@ function buildStudentRow(raw: any): StudentRow {
   const vdi = buildVdi(raw) ?? undefined;
   return {
     id: raw.id,
-    nome: raw.nome || raw.codigo_aluno,
+    nome: raw.codigo_aluno, // LGPD: identificação apenas por matrícula
     codigoAluno: raw.codigo_aluno,
     classId: raw.class_id,
     serie: cl?.serie,
