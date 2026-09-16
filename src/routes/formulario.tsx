@@ -100,7 +100,7 @@ function FormularioPage() {
 
     const { data: student, error: studentError } = await supabase
       .from("students")
-      .insert({ class_id: selectedClass, codigo_aluno: safeName, nome: safeName })
+      .insert({ class_id: selectedClass, codigo_aluno: safeName, nome: null })
       .select("id")
       .single();
 
