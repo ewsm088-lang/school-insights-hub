@@ -142,15 +142,15 @@ function ResponderPage() {
             )}
 
             {stage === 2 && (
-              <Step title="Passo 3 de 3" subtitle="Selecione seu nome">
+              <Step title="Passo 3 de 3" subtitle="Selecione sua matrícula">
                 <Select value={studentId} onValueChange={(v) => { setStudentId(v); setNewStudentName(""); }}>
-                  <SelectTrigger><SelectValue placeholder="Encontre seu nome" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Encontre sua matrícula" /></SelectTrigger>
                   <SelectContent>
-                    {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome || s.codigo_aluno}</SelectItem>)}
+                    {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.codigo_aluno}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <div className="text-xs text-muted-foreground text-center">ou digite seu nome se não encontrar:</div>
-                <Input placeholder="Seu nome completo" value={newStudentName} onChange={(e) => { setNewStudentName(e.target.value); setStudentId(""); }} />
+                <div className="text-xs text-muted-foreground text-center">ou digite sua matrícula se não encontrar:</div>
+                <Input inputMode="numeric" placeholder="Ex.: 3601121" value={newStudentName} onChange={(e) => { setNewStudentName(e.target.value); setStudentId(""); }} />
                 <div className="flex gap-2">
                   <Button variant="outline" size="lg" onClick={() => setStage(1)}><ChevronLeft className="h-4 w-4" /></Button>
                   <Button className="flex-1" size="lg" disabled={!studentId && !newStudentName.trim()} onClick={() => setStage(3)}>Começar</Button>
