@@ -29,7 +29,7 @@ export default defineTool({
         const academic = (s.academic_data as unknown as { nota: number; nota_min: number; nota_max: number }[])?.[0];
         const student: StudentData = {
           id: s.id,
-          nome: s.nome ?? undefined,
+          nome: s.codigo_aluno, // LGPD: apenas matrícula
           codigo_aluno: s.codigo_aluno,
           class_id: s.class_id,
           survey,
