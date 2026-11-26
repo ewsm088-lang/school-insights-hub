@@ -38,7 +38,7 @@ function RegisterPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.from("credes").select("*").order("numero").then(({ data }) => {
+    supabase.rpc("list_public_credes").then(({ data }) => {
       if (data) setCredes(data);
     });
   }, []);

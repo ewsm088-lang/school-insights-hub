@@ -27,7 +27,7 @@ interface School { id: string; nome: string; }
 interface ClassItem { id: string; nome_turma: string; serie: string; }
 
 function sanitizeText(value: string) {
-  return value.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 100);
+  return value.replace(/[^0-9A-Za-z/-]/g, "").trim().slice(0, 20);
 }
 
 function FormularioPage() {
@@ -43,7 +43,7 @@ function FormularioPage() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    void supabase.from("credes").select("id, numero, nome, cidade_sede").order("numero").then(({ data }) => {
+    void supabase.rpc("list_public_credes").then(({ data }) => {
       if (data) setCredes(data);
     });
   }, []);
@@ -55,7 +55,10 @@ function FormularioPage() {
       return;
     }
 
-    void supabase.from("schools").select("id, nome").eq("crede_id", selectedCrede).order("nome").then(({ data }) => {
+    void supabase.rpc("list_public_schools", {
+      p_crede_id: selectedCrede,
+      p_school_id: null,
+    }).then(({ data }) => {
       if (data) setSchools(data);
     });
     setSelectedSchool("");
@@ -69,7 +72,7 @@ function FormularioPage() {
       return;
     }
 
-    void supabase.from("classes").select("id, nome_turma, serie").eq("school_id", selectedSchool).order("serie").then(({ data }) => {
+    void supabase.rpc("list_public_classes", { p_school_id: selectedSchool }).then(({ data }) => {
       if (data) setClasses(data);
     });
     setSelectedClass("");
@@ -98,27 +101,25 @@ function FormularioPage() {
 
     setLoading(true);
 
-    const { data: student, error: studentError } = await supabase
-      .from("students")
-      .insert({ class_id: selectedClass, codigo_aluno: safeName, nome: null })
-      .select("id")
-      .single();
-
-    if (studentError || !student) {
-      toast.error("Erro ao registrar aluno: " + (studentError?.message || ""));
-      setLoading(false);
-      return;
-    }
-
-    const surveyData: Record<string, number> = { student_id: student.id } as any;
+    const surveyData: Record<string, number> = {};
     for (const q of allQuestions) {
       const value = Number(responses[q.key]);
       surveyData[q.key] = Number.isFinite(value) ? value : 3;
     }
 
-    const { error: surveyError } = await supabase.from("survey_responses").insert(surveyData as any);
-    if (surveyError) {
-      toast.error("Erro ao enviar respostas: " + surveyError.message);
+    const { data: submitResult, error: surveyError } = await supabase.rpc("submit_survey_response", {
+      p_class_id: selectedClass,
+      p_codigo_aluno: safeName,
+      p_answers: surveyData,
+    });
+    if (
+      surveyError ||
+      !submitResult ||
+      typeof submitResult !== "object" ||
+      !("ok" in submitResult) ||
+      submitResult.ok !== true
+    ) {
+      toast.error("Não foi possível enviar as respostas. Confira a matrícula e tente novamente.");
       setLoading(false);
       return;
     }

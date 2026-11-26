@@ -20,7 +20,6 @@ export const Route = createFileRoute("/responder/$token")({
 
 interface School { id: string; nome: string }
 interface ClassItem { id: string; nome_turma: string; serie: string }
-interface Student { id: string; nome: string | null; codigo_aluno: string }
 
 function ResponderPage() {
   const { token } = Route.useParams();
@@ -28,10 +27,8 @@ function ResponderPage() {
   const [stage, setStage] = useState(0);
   const [schools, setSchools] = useState<School[]>([]);
   const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
   const [schoolId, setSchoolId] = useState("");
   const [classId, setClassId] = useState("");
-  const [studentId, setStudentId] = useState("");
   const [newStudentName, setNewStudentName] = useState("");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -41,10 +38,21 @@ function ResponderPage() {
   useEffect(() => {
     async function init() {
       if (token && token !== "open") {
-        const { data } = await supabase.from("schools").select("id, nome").eq("id", token).maybeSingle();
-        if (data) { setSchools([data]); setSchoolId(data.id); setStage(1); return; }
+        const { data } = await supabase.rpc("list_public_schools", {
+          p_crede_id: null,
+          p_school_id: token,
+        });
+        if (data?.length) {
+          setSchools(data);
+          setSchoolId(data[0].id);
+          setStage(1);
+          return;
+        }
       }
-      const { data: all } = await supabase.from("schools").select("id, nome").order("nome");
+      const { data: all } = await supabase.rpc("list_public_schools", {
+        p_crede_id: null,
+        p_school_id: null,
+      });
       setSchools(all ?? []);
     }
     init();
@@ -52,13 +60,8 @@ function ResponderPage() {
 
   useEffect(() => {
     if (!schoolId) return;
-    supabase.from("classes").select("id, nome_turma, serie").eq("school_id", schoolId).order("serie").then(({ data }) => setClasses(data ?? []));
+    supabase.rpc("list_public_classes", { p_school_id: schoolId }).then(({ data }) => setClasses(data ?? []));
   }, [schoolId]);
-
-  useEffect(() => {
-    if (!classId) return;
-    supabase.from("students").select("id, nome, codigo_aluno").eq("class_id", classId).order("codigo_aluno").then(({ data }) => setStudents(data ?? []));
-  }, [classId]);
 
   const totalQuestions = ALL_QUESTIONS.length;
   const qIndex = stage - 3;
@@ -69,22 +72,25 @@ function ResponderPage() {
   async function submit() {
     setSubmitting(true);
     try {
-      let sid = studentId;
-      if (!sid && newStudentName.trim() && classId) {
-        const code = newStudentName.trim().replace(/[^0-9A-Za-z/-]/g, "").slice(0, 20);
-        const { data: created, error: serr } = await supabase
-          .from("students").insert({ class_id: classId, nome: null, codigo_aluno: code }).select("id").single();
-        if (serr || !created) throw serr ?? new Error("insert failed");
-        sid = created.id;
+      const code = newStudentName.trim().replace(/[^0-9A-Za-z/-]/g, "").slice(0, 20);
+      if (!code || !classId) throw new Error("Informe a matrícula e a turma.");
+      const { data: submitResult, error } = await supabase.rpc("submit_survey_response", {
+        p_class_id: classId,
+        p_codigo_aluno: code,
+        p_answers: answers,
+      });
+      if (
+        error ||
+        !submitResult ||
+        typeof submitResult !== "object" ||
+        !("ok" in submitResult) ||
+        submitResult.ok !== true
+      ) {
+        throw error ?? new Error("Não foi possível enviar as respostas.");
       }
-      if (!sid) throw new Error("Sem aluno");
-      const payload: any = { student_id: sid };
-      for (const q of ALL_QUESTIONS) payload[q.key] = answers[q.key] ?? 3;
-      const { error } = await supabase.from("survey_responses").insert(payload);
-      if (error) throw error;
       setDone(true);
     } catch (e: any) {
-      toast.error("Não foi possível enviar: " + (e?.message ?? ""));
+      toast.error(e?.message === "Informe a matrícula e a turma." ? e.message : "Não foi possível enviar as respostas. Confira a matrícula e tente novamente.");
     } finally {
       setSubmitting(false);
     }
@@ -142,18 +148,18 @@ function ResponderPage() {
             )}
 
             {stage === 2 && (
-              <Step title="Passo 3 de 3" subtitle="Selecione sua matrícula">
-                <Select value={studentId} onValueChange={(v) => { setStudentId(v); setNewStudentName(""); }}>
-                  <SelectTrigger><SelectValue placeholder="Encontre sua matrícula" /></SelectTrigger>
-                  <SelectContent>
-                    {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.codigo_aluno}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <div className="text-xs text-muted-foreground text-center">ou digite sua matrícula se não encontrar:</div>
-                <Input inputMode="numeric" placeholder="Ex.: 3601121" value={newStudentName} onChange={(e) => { setNewStudentName(e.target.value); setStudentId(""); }} />
+              <Step title="Passo 3 de 3" subtitle="Informe sua matrícula">
+                <Input
+                  inputMode="numeric"
+                  maxLength={20}
+                  placeholder="Ex.: 3601121"
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value.replace(/[^0-9A-Za-z/-]/g, "").slice(0, 20))}
+                />
+                <p className="text-center text-xs text-muted-foreground">Digite sua matrícula. Não informe seu nome.</p>
                 <div className="flex gap-2">
                   <Button variant="outline" size="lg" onClick={() => setStage(1)}><ChevronLeft className="h-4 w-4" /></Button>
-                  <Button className="flex-1" size="lg" disabled={!studentId && !newStudentName.trim()} onClick={() => setStage(3)}>Começar</Button>
+                  <Button className="flex-1" size="lg" disabled={!newStudentName.trim()} onClick={() => setStage(3)}>Começar</Button>
                 </div>
               </Step>
             )}

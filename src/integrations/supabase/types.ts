@@ -387,6 +387,44 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_public_credes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          numero: number
+          nome: string
+          cidade_sede: string
+        }[]
+      }
+      list_public_schools: {
+        Args: {
+          p_crede_id?: string | null
+          p_school_id?: string | null
+        }
+        Returns: {
+          id: string
+          nome: string
+          crede_id: string
+        }[]
+      }
+      list_public_classes: {
+        Args: {
+          p_school_id: string
+        }
+        Returns: {
+          id: string
+          nome_turma: string
+          serie: string
+        }[]
+      }
+      submit_survey_response: {
+        Args: {
+          p_answers: Json
+          p_class_id: string
+          p_codigo_aluno: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "school_responsible"

@@ -1,1 +1,4 @@
 project_id = "izoyhdubmjluwyhnqhrn"
+
+[functions.generate-school-report]
+verify_jwt = true

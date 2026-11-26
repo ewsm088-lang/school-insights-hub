@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RelatorioCharts } from "@/components/charts/RelatorioCharts";
+import { AiSchoolReport } from "@/components/AiSchoolReport";
 import { calcDesvioPadrao, calcIEDE, classificar, classifyVDI, VDI_COLORS } from "@/lib/descartes";
 import { loadVdisBySchool, type VDIExtra } from "@/lib/load-data";
 import { MathBlock } from "@/components/Formula";
@@ -129,6 +130,10 @@ function DashboardPage() {
           <StatCard icon={<Activity className="h-5 w-5" />} label="Desvio padrão" value={overviewSigma.toFixed(3)} hint="Desigualdade interna" />
           <StatCard icon={<Users className="h-5 w-5" />} label="Alunos" value={filteredVdis.length.toString()} hint={selectedClass === "all" ? "Na escola" : "Na turma"} />
           <StatCard icon={<BarChart3 className="h-5 w-5" />} label="Atenção" value={alunosAtencao.length.toString()} hint="Em vulnerabilidade" />
+        </div>
+
+        <div className="mb-8">
+          <AiSchoolReport />
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
