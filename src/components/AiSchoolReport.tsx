@@ -42,6 +42,54 @@ function formatMetric(value: number | null) {
   return value == null ? "Sem dados" : value.toFixed(2);
 }
 
+async function getFunctionErrorMessage(error: unknown) {
+  const context =
+    error && typeof error === "object" && "context" in error
+      ? (error as { context?: unknown }).context
+      : undefined;
+
+  if (!context || typeof context !== "object") {
+    return "Não foi possível conectar ao serviço de relatórios. Confira o projeto Supabase usado pelo preview.";
+  }
+
+  const response = context as {
+    status?: unknown;
+    clone?: () => { json: () => Promise<unknown> };
+  };
+  const status = typeof response.status === "number" ? response.status : null;
+  let body: Record<string, unknown> | null = null;
+
+  try {
+    const clonedResponse = response.clone?.();
+    if (clonedResponse) {
+      const parsed = await clonedResponse.json();
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        body = parsed as Record<string, unknown>;
+      }
+    }
+  } catch {
+    // Some gateway errors return plain text instead of JSON.
+  }
+
+  if (status === 404) {
+    return "A função generate-school-report não está publicada no mesmo projeto Supabase conectado ao preview.";
+  }
+
+  const serverMessage = body?.error ?? body?.message;
+  if (typeof serverMessage === "string") return serverMessage;
+
+  if (status === 401) {
+    return "Sua sessão expirou. Entre novamente na conta da escola e tente de novo.";
+  }
+  if (status === 403) {
+    return "Esta conta não tem uma escola vinculada como responsável no Supabase.";
+  }
+  if (status != null) {
+    return `O serviço de relatórios respondeu com erro HTTP ${status}. Confira os logs da função no Lovable Cloud.`;
+  }
+  return "Não foi possível conectar ao serviço de relatórios. Confira o projeto Supabase usado pelo preview.";
+}
+
 export function AiSchoolReport() {
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -59,7 +107,7 @@ export function AiSchoolReport() {
       });
 
       if (error) {
-        setErrorMessage("Não foi possível gerar o relatório. Verifique a configuração do OpenRouter no Lovable Cloud.");
+        setErrorMessage(await getFunctionErrorMessage(error));
         return;
       }
       if (data?.code === "insufficient_data" || data?.code === "no_data") {
