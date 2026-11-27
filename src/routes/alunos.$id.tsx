@@ -14,7 +14,13 @@ import { GaugeVDI } from "@/components/charts/GaugeVDI";
 import { RadarPerfil } from "@/components/charts/RadarPerfil";
 
 export const Route = createFileRoute("/alunos/$id")({
-  head: () => ({ meta: [{ title: "Aluno — DESCARTES" }] }),
+  head: () => ({ meta: [{ title: "Aluno — DESCARTES" },
+      { name: "description", content: "Perfil por matrícula e acompanhamento educacional no DESCARTES." },
+      { property: "og:title", content: "Aluno — DESCARTES" },
+      { property: "og:description", content: "Perfil por matrícula e acompanhamento educacional no DESCARTES." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ] }),
   component: AlunoPage,
 });
 

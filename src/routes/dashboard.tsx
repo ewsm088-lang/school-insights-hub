@@ -19,6 +19,10 @@ export const Route = createFileRoute("/dashboard")({
     meta: [
       { title: "Dashboard — DESCARTES" },
       { name: "description", content: "Visão geral e acompanhamento por turma do DESCARTES" },
+      { property: "og:title", content: "Dashboard — DESCARTES" },
+      { property: "og:description", content: "Visão geral e acompanhamento por turma do DESCARTES" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   beforeLoad: async ({ location }) => {

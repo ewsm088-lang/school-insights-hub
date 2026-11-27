@@ -9,7 +9,13 @@ import { classifyVDI, VDI_COLORS } from "@/lib/descartes";
 import { loadVdisBySchool, type VDIExtra } from "@/lib/load-data";
 
 export const Route = createFileRoute("/relatorios")({
-  head: () => ({ meta: [{ title: "Relatórios — DESCARTES" }] }),
+  head: () => ({ meta: [{ title: "Relatórios — DESCARTES" },
+      { name: "description", content: "Indicadores e relatórios da convivência escolar no DESCARTES." },
+      { property: "og:title", content: "Relatórios — DESCARTES" },
+      { property: "og:description", content: "Indicadores e relatórios da convivência escolar no DESCARTES." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ] }),
   component: RelatoriosPage,
 });
 

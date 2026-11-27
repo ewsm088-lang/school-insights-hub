@@ -59,7 +59,7 @@ export function AiSchoolReport() {
       });
 
       if (error) {
-        setErrorMessage("Não foi possível gerar o relatório. Confirme se a função Supabase e o segredo OPENROUTER_API_KEY estão configurados.");
+        setErrorMessage("Não foi possível gerar o relatório. Verifique a configuração do OpenRouter no Lovable Cloud.");
         return;
       }
       if (data?.code === "insufficient_data" || data?.code === "no_data") {

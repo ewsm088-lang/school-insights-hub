@@ -20,7 +20,13 @@ import { RadarPerfil } from "@/components/charts/RadarPerfil";
 import { HistogramaVDI } from "@/components/charts/HistogramaVDI";
 
 export const Route = createFileRoute("/turmas/$id")({
-  head: () => ({ meta: [{ title: "Turma — DESCARTES" }] }),
+  head: () => ({ meta: [{ title: "Turma — DESCARTES" },
+      { name: "description", content: "Indicadores acadêmicos, sociais e socioemocionais da turma no DESCARTES." },
+      { property: "og:title", content: "Turma — DESCARTES" },
+      { property: "og:description", content: "Indicadores acadêmicos, sociais e socioemocionais da turma no DESCARTES." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ] }),
   component: TurmaPage,
 });
 

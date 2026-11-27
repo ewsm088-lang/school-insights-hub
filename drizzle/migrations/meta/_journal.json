@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1795780576254,
+      "tag": "0000_apply_pending_questionnaire_security_and_observation_cascade",
+      "breakpoints": true
+    }
+  ]
+}

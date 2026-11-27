@@ -13,6 +13,10 @@ export const Route = createFileRoute("/login")({
     meta: [
       { title: "Login — DESCARTES" },
       { name: "description", content: "Acesse sua conta DESCARTES" },
+      { property: "og:title", content: "Login — DESCARTES" },
+      { property: "og:description", content: "Acesse sua conta DESCARTES" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   validateSearch: (s: Record<string, unknown>): { next?: string } => ({

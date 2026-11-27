@@ -14,7 +14,12 @@ export const Route = createFileRoute("/responder/$token")({
   head: () => ({ meta: [
     { title: "Questionário — DESCARTES" },
     { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
-  ]}),
+      { name: "description", content: "Questionário de convivência escolar do DESCARTES por matrícula." },
+      { property: "og:title", content: "Questionário — DESCARTES" },
+      { property: "og:description", content: "Questionário de convivência escolar do DESCARTES por matrícula." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ]}),
   component: ResponderPage,
 });
 
@@ -39,7 +44,6 @@ function ResponderPage() {
     async function init() {
       if (token && token !== "open") {
         const { data } = await supabase.rpc("list_public_schools", {
-          p_crede_id: null,
           p_school_id: token,
         });
         if (data?.length) {
@@ -49,10 +53,7 @@ function ResponderPage() {
           return;
         }
       }
-      const { data: all } = await supabase.rpc("list_public_schools", {
-        p_crede_id: null,
-        p_school_id: null,
-      });
+      const { data: all } = await supabase.rpc("list_public_schools", {});
       setSchools(all ?? []);
     }
     init();

@@ -11,7 +11,13 @@ import { calcDesvioPadrao, calcIEDE, classificar, classifyVDI, VDI_COLORS } from
 import { loadVdisBySchool, type VDIExtra } from "@/lib/load-data";
 
 export const Route = createFileRoute("/turmas")({
-  head: () => ({ meta: [{ title: "Turmas — DESCARTES" }] }),
+  head: () => ({ meta: [{ title: "Turmas — DESCARTES" },
+      { name: "description", content: "Acompanhe os indicadores e as turmas da sua escola no DESCARTES." },
+      { property: "og:title", content: "Turmas — DESCARTES" },
+      { property: "og:description", content: "Acompanhe os indicadores e as turmas da sua escola no DESCARTES." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ] }),
   beforeLoad: async ({ location }) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {

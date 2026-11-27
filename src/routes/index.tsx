@@ -11,6 +11,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Plataforma para análise vetorial 3D da convivência escolar usando os eixos Acadêmico, Social e Socioemocional." },
       { property: "og:title", content: "DESCARTES — Convivência Democrática Escolar" },
       { property: "og:description", content: "Análise vetorial 3D da convivência escolar." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Index,

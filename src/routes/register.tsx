@@ -14,6 +14,10 @@ export const Route = createFileRoute("/register")({
     meta: [
       { title: "Cadastrar Escola — DESCARTES" },
       { name: "description", content: "Cadastre sua escola no sistema DESCARTES" },
+      { property: "og:title", content: "Cadastrar Escola — DESCARTES" },
+      { property: "og:description", content: "Cadastre sua escola no sistema DESCARTES" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: RegisterPage,

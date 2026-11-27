@@ -136,7 +136,15 @@ export type Database = {
           texto?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "observacoes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schools: {
         Row: {
@@ -386,6 +394,35 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      list_public_classes: {
+        Args: { p_school_id: string }
+        Returns: {
+          id: string
+          nome_turma: string
+          serie: string
+        }[]
+      }
+      list_public_credes: {
+        Args: never
+        Returns: {
+          cidade_sede: string
+          id: string
+          nome: string
+          numero: number
+        }[]
+      }
+      list_public_schools: {
+        Args: { p_crede_id?: string; p_school_id?: string }
+        Returns: {
+          crede_id: string
+          id: string
+          nome: string
+        }[]
+      }
+      submit_survey_response: {
+        Args: { p_answers: Json; p_class_id: string; p_codigo_aluno: string }
+        Returns: Json
       }
     }
     Enums: {

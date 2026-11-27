@@ -1,14 +1,36 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import {
-  calcAcademico,
-  calcModuloVDI,
-  calcSocial,
-  calcSocioemocional,
-  calcSubdimensoes,
-  SOCIAL_KEYS,
-  SOCIO_KEYS,
-  type SurveyRow,
-} from "../../../src/lib/descartes.ts";
+// Keep these calculations aligned with src/lib/descartes.ts. The deployment
+// bundle for this existing function cannot resolve imports outside functions/.
+const SOCIAL_KEYS = ["s01","s02","s03","s04","s05","s06","s07","s08","s09","s10","s11","s12","s13","s14","s15","s16","s17","s18","s19","s20"] as const;
+const SOCIO_KEYS = ["e01","e02","e03","e04","e05","e06","e07","e08","e09","e10","e11","e12","e13","e14","e15","e16","e17","e18","e19","e20"] as const;
+type SurveyRow = Record<typeof SOCIAL_KEYS[number] | typeof SOCIO_KEYS[number], number>;
+
+function calcAcademico(nota: number, notaMin: number, notaMax: number) {
+  if (notaMax === notaMin) return 0;
+  return Math.max(0, Math.min(1, (nota - notaMin) / (notaMax - notaMin)));
+}
+function calcSocial(survey: SurveyRow) {
+  return (SOCIAL_KEYS.reduce((sum, key) => sum + (survey[key] || 3), 0) / 20 - 1) / 4;
+}
+function calcSocioemocional(survey: SurveyRow) {
+  return (SOCIO_KEYS.reduce((sum, key) => sum + (survey[key] || 3), 0) / 20 - 1) / 4;
+}
+function calcModuloVDI(A: number | null, S: number, E: number) {
+  return Math.sqrt((A == null ? 0 : A * A) + S * S + E * E);
+}
+function calcSubdimensoes(survey: SurveyRow): Record<string, number> {
+  const groups = [
+    ["participacao", SOCIAL_KEYS.slice(0, 7)],
+    ["respeito", SOCIAL_KEYS.slice(7, 14)],
+    ["colaboracao", SOCIAL_KEYS.slice(14)],
+    ["autogestao", SOCIO_KEYS.slice(0, 7)],
+    ["empatia", SOCIO_KEYS.slice(7, 14)],
+    ["resolucao", SOCIO_KEYS.slice(14)],
+  ] as const;
+  return Object.fromEntries(groups.map(([name, keys]) => [
+    name, (keys.reduce((sum, key) => sum + (survey[key] || 3), 0) / keys.length - 1) / 4,
+  ]));
+}
 
 const MIN_GROUP_SIZE = 10;
 const PAGE_SIZE = 500;
@@ -186,7 +208,7 @@ function toPromptGroup(group: Group) {
       eixoAcademico: round(group.metrics.academicAverage),
       coberturaAcademica: group.metrics.academicCoverage,
       eixoSocial: round(group.metrics.socialAverage),
-      eixoSocioemocional: round(group.metrics.socioemocionalAverage),
+      eixoSocioemocional: round(group.metrics.socioemotionalAverage),
       vdiMedio: round(group.metrics.vdiAverage),
       desvioPadraoVdi: round(group.metrics.vdiStdDev),
       subdimensoes: Object.fromEntries(
@@ -232,7 +254,7 @@ Deno.serve(async (request: Request) => {
     return json({ error: "A função não está configurada corretamente." }, 500);
   }
   if (!openRouterKey) {
-    return json({ error: "Configure OPENROUTER_API_KEY nos secrets do Supabase." }, 503);
+    return json({ error: "Configure a chave do OpenRouter nos segredos do Lovable Cloud." }, 503);
   }
 
   const accessToken = authorization.slice(7).trim();

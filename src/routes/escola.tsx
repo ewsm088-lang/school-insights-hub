@@ -17,6 +17,10 @@ export const Route = createFileRoute("/escola")({
     meta: [
       { title: "Minha Escola — DESCARTES" },
       { name: "description", content: "Gerencie turmas, alunos e notas da sua escola" },
+      { property: "og:title", content: "Minha Escola — DESCARTES" },
+      { property: "og:description", content: "Gerencie turmas, alunos e notas da sua escola" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: EscolaPage,

@@ -17,6 +17,10 @@ export const Route = createFileRoute("/formulario")({
     meta: [
       { title: "Formulário do Aluno — DESCARTES" },
       { name: "description", content: "Responda o questionário de convivência escolar" },
+      { property: "og:title", content: "Formulário do Aluno — DESCARTES" },
+      { property: "og:description", content: "Responda o questionário de convivência escolar" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: FormularioPage,
@@ -57,7 +61,6 @@ function FormularioPage() {
 
     void supabase.rpc("list_public_schools", {
       p_crede_id: selectedCrede,
-      p_school_id: null,
     }).then(({ data }) => {
       if (data) setSchools(data);
     });
